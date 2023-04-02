@@ -1,0 +1,53 @@
+.lasercan {
+  font-size: 1em;
+
+  .lasercan-bar {
+    --bs-progress-height: 1.5em;
+    > * {
+      --bs-progress-bar-transition: width 0.02s ease;
+    }
+  }
+}
+
+.lasercan-roi-picker {
+  position: relative;
+  margin: auto;
+  width: 30vw;
+  height: 30vw;
+  background-color: rgb(100, 100, 100);
+  
+  .lasercan-roi-picker-center-x {
+    border: 2px solid rgb(150, 150, 150);
+    position: absolute;
+    left: calc(50% - 1px);
+    top: 0;
+    height: 100%;
+    width: 1px;
+  }
+
+  .lasercan-roi-picker-center-y {
+    border: 2px solid rgb(150, 150, 150);
+    position: absolute;
+    left: 0;
+    top: calc(50% - 1px);
+    height: 1px;
+    width: 100%;
+  }
+
+  .lasercan-roi-picker-element {
+    position: absolute;
+    margin: 0;
+    width: calc(1 / 16 * 100%);
+    height: calc(1 / 16 * 100%);
+    border: 1px rgb(120, 120, 120) solid;
+
+    &[data-selected="true"] {
+      &[data-valid="true"] {
+        background-color: rgb(100, 200, 100);
+      }
+      &[data-valid="false"] {
+        background-color: rgb(200, 150, 100);
+      }
+    }
+  }
+}

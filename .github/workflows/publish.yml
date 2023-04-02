@@ -1,0 +1,83 @@
+name: "publish"
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-daemon:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: wpilib/roborio-cross-ubuntu:2023-22.04
+            artifact-name: Daemon
+            build-options: "-Ponlylinuxathena"
+            platform: linuxathena
+    name: "Build - ${{ matrix.artifact-name }}"
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Fetch all history and metadata
+        run: |
+          git config --global --add safe.directory /__w/GrappleHook/GrappleHook
+          git fetch --prune --unshallow
+      - name: Build with Gradle
+        run: cd GrappleHook-RoboRIO-Daemon && chmod +x gradlew && ./gradlew build --max-workers 1 ${{ matrix.build-options }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: GrappleHook-RoboRIO-Daemon/build/exe/
+
+  publish-tauri:
+    needs: [build-daemon]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: Daemon
+          path: GrappleHook-RoboRIO-Daemon/build/exe/
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf tree
+
+      - name: install frontend dependencies
+        run: cd grapple-hook && yarn install && yarn global add json-schema-to-typescript
+
+      - name: Update Schema
+        run: cd grapple-hook && yarn update-schema
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: grapple-hook
+          tagName: v__VERSION__
+          releaseName: "GrappleHook v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
+          releaseDraft: true
+          prerelease: false

@@ -1,0 +1,1216 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MegaSchema",
+  "type": "object",
+  "required": [
+    "lasercan_req",
+    "lasercan_rsp",
+    "provider_manager_req",
+    "provider_manager_rsp"
+  ],
+  "properties": {
+    "lasercan_req": {
+      "$ref": "#/definitions/LaserCanRequest"
+    },
+    "lasercan_rsp": {
+      "$ref": "#/definitions/LaserCanResponse"
+    },
+    "provider_manager_req": {
+      "$ref": "#/definitions/ProviderManagerRequest"
+    },
+    "provider_manager_rsp": {
+      "$ref": "#/definitions/ProviderManagerResponse"
+    }
+  },
+  "definitions": {
+    "DeviceId": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Serial"
+          ],
+          "properties": {
+            "Serial": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "CanId"
+          ],
+          "properties": {
+            "CanId": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DeviceInfo": {
+      "type": "object",
+      "required": [
+        "device_type",
+        "is_dfu",
+        "is_dfu_in_progress"
+      ],
+      "properties": {
+        "device_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "device_type": {
+          "$ref": "#/definitions/DeviceType"
+        },
+        "firmware_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "is_dfu": {
+          "type": "boolean"
+        },
+        "is_dfu_in_progress": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "serial": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "DeviceManagerRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "data",
+                "device_id",
+                "domain"
+              ],
+              "properties": {
+                "data": true,
+                "device_id": {
+                  "$ref": "#/definitions/DeviceId"
+                },
+                "domain": {
+                  "type": "string"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "devices"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "DeviceManagerResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": true,
+            "method": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "$ref": "#/definitions/DeviceId"
+                    },
+                    {
+                      "$ref": "#/definitions/DeviceInfo"
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "devices"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "DeviceType": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "RoboRIO",
+            "Unknown"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Grapple"
+          ],
+          "properties": {
+            "Grapple": {
+              "$ref": "#/definitions/GrappleModelId"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "FirmwareUpgradeDeviceRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "data"
+              ],
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "do_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "progress"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "FirmwareUpgradeDeviceResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "do_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "progress"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleDeviceRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "blink"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_id"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_name"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "commit_to_eeprom"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleDeviceResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "blink"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_id"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_name"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "commit_to_eeprom"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleModelId": {
+      "type": "string",
+      "enum": [
+        "LaserCan",
+        "SpiderLan"
+      ]
+    },
+    "LaserCanRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "long"
+              ],
+              "properties": {
+                "long": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_range"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "roi"
+              ],
+              "properties": {
+                "roi": {
+                  "$ref": "#/definitions/LaserCanRoi"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_roi"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "budget"
+              ],
+              "properties": {
+                "budget": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_timing_budget"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/GrappleDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/FirmwareUpgradeDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "firmware"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "LaserCanResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_range"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_roi"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_timing_budget"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "firmware"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanStatus"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "LaserCanRoi": {
+      "type": "object",
+      "required": [
+        "h",
+        "w",
+        "x",
+        "y"
+      ],
+      "properties": {
+        "h": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "w": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "x": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "y": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
+    "LaserCanStatus": {
+      "type": "object",
+      "properties": {
+        "last_update": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LaserCanStatusFrame"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "LaserCanStatusFrame": {
+      "type": "object",
+      "required": [
+        "ambient",
+        "budget_ms",
+        "distance_mm",
+        "long",
+        "roi",
+        "status"
+      ],
+      "properties": {
+        "ambient": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "budget_ms": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "distance_mm": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "long": {
+          "type": "boolean"
+        },
+        "roi": {
+          "$ref": "#/definitions/LaserCanRoi"
+        },
+        "status": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ProviderInfo": {
+      "type": "object",
+      "required": [
+        "address",
+        "connected",
+        "description"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "connected": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "ProviderManagerRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "address"
+              ],
+              "properties": {
+                "address": {
+                  "type": "string"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "delete"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "address",
+                "msg"
+              ],
+              "properties": {
+                "address": {
+                  "type": "string"
+                },
+                "msg": {
+                  "$ref": "#/definitions/WrappedDeviceProviderRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "provider"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "providers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ProviderManagerResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "delete"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/WrappedDeviceProviderResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "provider"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/ProviderInfo"
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "providers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "WrappedDeviceProviderRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "connect"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "disconnect"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "info"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "req"
+              ],
+              "properties": {
+                "req": {
+                  "$ref": "#/definitions/DeviceManagerRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "device_manager_call"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "WrappedDeviceProviderResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "connect"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "disconnect"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ProviderInfo"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "info"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeviceManagerResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "device_manager_call"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

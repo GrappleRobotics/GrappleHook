@@ -1,0 +1,41 @@
+{
+  "name": "grapple-hook",
+  "private": true,
+  "version": "23.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "update-schema": "cd src-tauri && cargo run --bin gen-schema ../schema.json && cd .. && npx json2ts schema.json --no-additionalProperties > src/schema.d.ts"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.4.0",
+    "@fortawesome/free-solid-svg-icons": "^6.4.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@tauri-apps/api": "^1.3.0",
+    "@types/react-confirm": "^0.2.3",
+    "@types/react-slider": "^1.3.1",
+    "bootstrap": "^5.2.3",
+    "bootswatch": "^5.2.3",
+    "immutability-helper": "^3.1.1",
+    "json-schema-to-typescript": "^13.0.1",
+    "node-sass": "^8.0.0",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.7.2",
+    "react-confirm": "^0.3.0-2",
+    "react-dom": "^18.2.0",
+    "react-slider": "^2.0.5",
+    "sass": "^1.60.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.3.1",
+    "@types/node": "^18.7.10",
+    "@types/react": "^18.0.15",
+    "@types/react-dom": "^18.0.6",
+    "@vitejs/plugin-react": "^3.0.0",
+    "typescript": "^4.6.4",
+    "vite": "^4.0.0"
+  }
+}
