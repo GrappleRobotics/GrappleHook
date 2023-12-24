@@ -1,7 +1,7 @@
 plugins {
     id "cpp"
     id "google-test-test-suite"
-    id "edu.wpi.first.GradleRIO" version "2023.2.1"
+    id "edu.wpi.first.GradleRIO" version "2024.1.1-beta-3"
 }
 
 // Define my targets (RoboRIO) and artifacts (deployable files)
@@ -56,7 +56,12 @@ model {
             // Set deploy task to deploy this component
             deployArtifact.component = it
             // wpi.cpp.deps.wpilibStatic(it)
-            wpi.cpp.deps.useLibrary(it, "hal_static", "wpiutil_static", "ni_link_libraries", "ni_runtime_libraries")
+            wpi.cpp.vendor.cpp(it)
+            wpi.cpp.deps.useLibrary(it, "wpilibc_static", "hal_static", "wpiutil_static", "ni_link_libraries", "ni_runtime_libraries")
         }
     }
+}
+
+wrapper {
+  gradleVersion '8.5'
 }

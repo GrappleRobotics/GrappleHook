@@ -18,21 +18,12 @@ async fn main() {
   Builder::new().filter_level(log::LevelFilter::Info).init();
 
   let provider_manager = Arc::new(ProviderManager::new().await);
-  let provider_manager2 = provider_manager.clone();
 
   tauri::async_runtime::set(tokio::runtime::Handle::current());
   
   tauri::Builder::default()
     .manage(provider_manager.clone())
     .setup(|app| {
-      // let handle = app.handle();
-
-      // TODO: Entire ProviderManager is getting locked because of the RPC call. Need to let it happen in the background as a tokio task.
-      // RPC call should be non-blocking...
-
-      tauri::async_runtime::spawn(async move {
-        provider_manager2.run().await.unwrap()
-      });
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![provider_manager_rpc])

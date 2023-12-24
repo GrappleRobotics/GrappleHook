@@ -1,28 +1,61 @@
 pub mod device_manager;
 pub mod provider;
 pub mod provider_manager;
-pub mod can_int;
 pub mod roborio;
 pub mod lasercan;
 
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration, collections::{LinkedList, HashMap}};
 
-use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage}, Message, DEVICE_ID_BROADCAST, ManufacturerMessage, binmarshal::{LengthTaggedVec, BinMarshal}};
+use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, Message, DEVICE_ID_BROADCAST, ManufacturerMessage, binmarshal::{LengthTaggedVec, BinMarshal}, MessageId};
 use grapple_hook_macros::rpc;
 use log::info;
 use serde::{Serialize, Deserialize};
-use tokio::sync::{mpsc, RwLock, Notify};
+use tokio::sync::{mpsc, RwLock, Notify, oneshot};
+use uuid::Uuid;
 
 use crate::rpc::RpcBase;
 
+use self::device_manager::RepliesWaiting;
+
 #[derive(Clone)]
-pub struct SendWrapper(mpsc::Sender<Message>);
+pub struct SendWrapper(mpsc::Sender<TaggedGrappleMessage>, RepliesWaiting);
 
 impl SendWrapper {
-  async fn send(&self, mut msg: Message) -> anyhow::Result<()> {
-    msg.update(());
-    msg.validate().map_err(|e| anyhow::anyhow!("{}", e))?;
-    self.0.send(msg).await.map_err(|e| anyhow::anyhow!(e))
+  async fn send(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+    msg.msg.validate()?;
+    self.0.send(msg).await?;
+    Ok(())
+  }
+
+  async fn request(&self, mut msg: TaggedGrappleMessage, timeout_ms: usize) -> anyhow::Result<TaggedGrappleMessage> {
+    let mut id = GrappleMessageId::new(msg.device_id);
+    msg.msg.update(&mut id);
+
+    let mut complement_id = id.clone();
+    complement_id.ack_flag = true;
+    let complement_id_u32: u32 = Into::<MessageId>::into(complement_id).into();
+
+    let uuid = Uuid::new_v4();
+
+    let (tx, rx) = oneshot::channel();
+    {
+      let mut hm = self.1.write().await;
+      if !hm.contains_key(&complement_id_u32) {
+        hm.insert(complement_id_u32, HashMap::new());
+      }
+      hm.get_mut(&complement_id_u32).unwrap().insert(uuid, tx);
+    }
+    self.send(msg).await?;
+
+    match tokio::time::timeout(Duration::from_millis(timeout_ms as u64), rx).await {
+      Ok(result) => result.map_err(|e| anyhow::anyhow!(e)),
+      Err(_) => {
+        // Timed out - remove it from the replies waiting
+        let mut hm = self.1.write().await;
+        hm.get_mut(&complement_id_u32).map(|x| x.remove(&uuid));
+        anyhow::bail!("Timed out waiting for response")
+      },
+    }
   }
 }
 
@@ -56,7 +89,7 @@ impl DeviceInfo {
 
 #[async_trait::async_trait]
 pub trait Device : RpcBase {
-  async fn handle(&self, msg: Message) -> anyhow::Result<()> { Ok(()) }
+  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> { Ok(()) }
 }
 
 pub type SharedInfo = Arc<RwLock<DeviceInfo>>;
@@ -77,47 +110,47 @@ impl GrappleDevice {
 #[rpc]
 impl GrappleDevice {
   async fn blink(&self) -> anyhow::Result<()> {
-    self.sender.send(Message::new(
+    self.sender.send(TaggedGrappleMessage::new(
       DEVICE_ID_BROADCAST,
-      grapple_frc_msgs::ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
+      grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
         grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::Blink {
           serial: self.info.read().await.require_serial()?
         })
-      ))
+      )
     )).await
   }
 
   async fn set_id(&self, id: u8) -> anyhow::Result<()>  {
-    self.sender.send(Message::new(
+    self.sender.send(TaggedGrappleMessage::new(
       DEVICE_ID_BROADCAST,
-      grapple_frc_msgs::ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
+      grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
         grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::SetId {
           serial: self.info.read().await.require_serial()?, new_id: id
         })
-      ))
+      )
     )).await
   }
 
   async fn set_name(&self, name: String) -> anyhow::Result<()>  {
-    self.sender.send(Message::new(
+    self.sender.send(TaggedGrappleMessage::new(
       DEVICE_ID_BROADCAST,
-      grapple_frc_msgs::ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
+      grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
         grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::SetName {
           serial: self.info.read().await.require_serial()?,
           name
         })
-      ))
+      )
     )).await
   }
 
   async fn commit_to_eeprom(&self) -> anyhow::Result<()>  {
-    self.sender.send(Message::new(
+    self.sender.send(TaggedGrappleMessage::new(
       DEVICE_ID_BROADCAST,
-      grapple_frc_msgs::ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
+      grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
         grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::CommitConfig {
           serial: self.info.read().await.require_serial()?,
         })
-      ))
+      )
     )).await
   }
 }
@@ -147,22 +180,22 @@ impl FirmwareUpgradeDevice {
       let mut c = [0u8; 8];
       c[0..chunk.len()].copy_from_slice(chunk);
 
-      sender.send(Message::new(
+      sender.send(TaggedGrappleMessage::new(
         id,
-        ManufacturerMessage::Grapple(GrappleDeviceMessage::FirmwareUpdate(
+        GrappleDeviceMessage::FirmwareUpdate(
           GrappleFirmwareMessage::UpdatePart(c)
-        ))
+        )
       )).await?;
       tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
       *progress.write().await = Some((i + 1) as f64 / (nchunks as f64) * 100.0);
     }
 
     *progress.write().await = Some(100.0);
-    sender.send(Message::new(
+    sender.send(TaggedGrappleMessage::new(
       id,
-      ManufacturerMessage::Grapple(GrappleDeviceMessage::FirmwareUpdate(
+      GrappleDeviceMessage::FirmwareUpdate(
         GrappleFirmwareMessage::UpdateDone
-      ))
+      )
     )).await?;
     *progress.write().await = None;
 
@@ -173,11 +206,11 @@ impl FirmwareUpgradeDevice {
 #[rpc]
 impl FirmwareUpgradeDevice {
   async fn start_field_upgrade(&self) -> anyhow::Result<()> {
-    self.sender.send(Message::new(
+    self.sender.send(TaggedGrappleMessage::new(
       DEVICE_ID_BROADCAST,
-      ManufacturerMessage::Grapple(GrappleDeviceMessage::FirmwareUpdate(
+      GrappleDeviceMessage::FirmwareUpdate(
         GrappleFirmwareMessage::StartFieldUpgrade { serial: self.info.read().await.require_serial()? }
-      ))
+      )
     )).await
   }
 
@@ -201,10 +234,10 @@ impl FirmwareUpgradeDevice {
 
 #[async_trait::async_trait]
 impl Device for FirmwareUpgradeDevice {
-  async fn handle(&self, msg: Message) -> anyhow::Result<()> {
+  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
     if msg.device_id == DEVICE_ID_BROADCAST || Some(msg.device_id) == self.info.read().await.device_id {
       match msg.clone().msg {
-        ManufacturerMessage::Grapple(GrappleDeviceMessage::FirmwareUpdate(fw)) => match fw {
+        GrappleDeviceMessage::FirmwareUpdate(fw) => match fw {
           GrappleFirmwareMessage::UpdatePartAck => {
             self.ack.notify_one();
           },
