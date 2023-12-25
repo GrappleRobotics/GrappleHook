@@ -5,6 +5,8 @@
   "required": [
     "lasercan_req",
     "lasercan_rsp",
+    "old_version_req",
+    "old_version_rsp",
     "provider_manager_req",
     "provider_manager_rsp"
   ],
@@ -14,6 +16,12 @@
     },
     "lasercan_rsp": {
       "$ref": "#/definitions/LaserCanResponse"
+    },
+    "old_version_req": {
+      "$ref": "#/definitions/OldVersionDeviceRequest"
+    },
+    "old_version_rsp": {
+      "$ref": "#/definitions/OldVersionDeviceResponse"
     },
     "provider_manager_req": {
       "$ref": "#/definitions/ProviderManagerRequest"
@@ -193,10 +201,13 @@
                     },
                     {
                       "$ref": "#/definitions/DeviceInfo"
+                    },
+                    {
+                      "type": "string"
                     }
                   ],
-                  "maxItems": 2,
-                  "minItems": 2
+                  "maxItems": 3,
+                  "minItems": 3
                 }
               }
             },
@@ -893,6 +904,177 @@
           "minimum": 0.0
         }
       }
+    },
+    "OldVersionDeviceRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_error"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_firmware_url"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/GrappleDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/FirmwareUpgradeDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "firmware"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "OldVersionDeviceResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_error"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_firmware_url"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "firmware"
+              ]
+            }
+          }
+        }
+      ]
     },
     "ProviderInfo": {
       "type": "object",

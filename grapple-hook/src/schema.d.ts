@@ -131,6 +131,44 @@ export type FirmwareUpgradeDeviceResponse =
       data: number | null;
       method: "progress";
     };
+export type OldVersionDeviceRequest =
+  | {
+      data: {};
+      method: "get_error";
+    }
+  | {
+      data: {};
+      method: "get_firmware_url";
+    }
+  | {
+      data: {
+        msg: GrappleDeviceRequest;
+      };
+      method: "grapple";
+    }
+  | {
+      data: {
+        msg: FirmwareUpgradeDeviceRequest;
+      };
+      method: "firmware";
+    };
+export type OldVersionDeviceResponse =
+  | {
+      data: string;
+      method: "get_error";
+    }
+  | {
+      data: string | null;
+      method: "get_firmware_url";
+    }
+  | {
+      data: GrappleDeviceResponse;
+      method: "grapple";
+    }
+  | {
+      data: FirmwareUpgradeDeviceResponse;
+      method: "firmware";
+    };
 export type ProviderManagerRequest =
   | {
       data: {
@@ -227,7 +265,7 @@ export type DeviceManagerResponse =
     }
   | {
       data: {
-        [k: string]: [DeviceId, DeviceInfo][];
+        [k: string]: [DeviceId, DeviceInfo, string][];
       };
       method: "devices";
     };
@@ -241,6 +279,8 @@ export type GrappleModelId = "LaserCan" | "SpiderLan";
 export interface MegaSchema {
   lasercan_req: LaserCanRequest;
   lasercan_rsp: LaserCanResponse;
+  old_version_req: OldVersionDeviceRequest;
+  old_version_rsp: OldVersionDeviceResponse;
   provider_manager_req: ProviderManagerRequest;
   provider_manager_rsp: ProviderManagerResponse;
 }

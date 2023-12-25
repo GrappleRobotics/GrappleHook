@@ -1,6 +1,6 @@
 use std::{path::Path, fs, env};
 
-use grapple_hook::devices::{provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, lasercan::{LaserCanRequest, LaserCanResponse}};
+use grapple_hook::devices::{provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, OldVersionDeviceRequest, OldVersionDeviceResponse};
 
 #[derive(schemars::JsonSchema)]
 #[allow(unused)]
@@ -10,8 +10,11 @@ struct MegaSchema {
   
   // spiderlan_req: SpiderLanRequest,
   // spiderlan_rsp: SpiderLanResponse
+  old_version_req: OldVersionDeviceRequest,
+  old_version_rsp: OldVersionDeviceResponse,
+
   lasercan_req: LaserCanRequest,
-  lasercan_rsp: LaserCanResponse
+  lasercan_rsp: LaserCanResponse,
 }
 
 fn main() -> anyhow::Result<()> {

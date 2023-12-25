@@ -1185,6 +1185,7 @@ dependencies = [
  "network-interface",
  "rust-embed",
  "schemars",
+ "semver",
  "serde",
  "serde-error",
  "serde_json",

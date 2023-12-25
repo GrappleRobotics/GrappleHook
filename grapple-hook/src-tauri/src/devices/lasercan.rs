@@ -3,7 +3,7 @@ use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
 use crate::rpc::RpcBase;
-use super::{SendWrapper, SharedInfo, GrappleDevice, FirmwareUpgradeDevice, Device, FirmwareUpgradeDeviceRequest, GrappleDeviceRequest, GrappleDeviceResponse, FirmwareUpgradeDeviceResponse};
+use super::{SendWrapper, SharedInfo, GrappleDevice, FirmwareUpgradeDevice, Device, FirmwareUpgradeDeviceRequest, GrappleDeviceRequest, GrappleDeviceResponse, FirmwareUpgradeDeviceResponse, VersionGatedDevice, RootDevice};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LaserCanStatus {
@@ -31,6 +31,23 @@ impl LaserCan {
 
       status: RwLock::new(LaserCanStatus { last_update: None })
     }
+  }
+}
+
+impl VersionGatedDevice for LaserCan {
+  fn validate_version(version: Option<String>) -> anyhow::Result<()> {
+    Self::require_version(version, ">= 2024.0.0, < 2024.1.0")
+  }
+
+  fn firmware_url() -> Option<String> {
+    Some("https://github.com/GrappleRobotics/LaserCAN/releases".to_owned())
+  }
+}
+
+#[async_trait::async_trait]
+impl RootDevice for LaserCan {
+  fn device_class(&self) -> &'static str {
+    "LaserCAN"
   }
 }
 

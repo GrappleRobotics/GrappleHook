@@ -35,6 +35,7 @@ schemars = "0.8.12"
 network-interface = "1.0.1"
 grapple-hook-macros = { path = "../grapple-hook-macros" }
 uuid = "1.6.1"
+semver = "1.0.20"
 
 [[bin]]
 name = "grapple-hook"

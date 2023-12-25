@@ -7,13 +7,14 @@ import Bug from "../Bug";
 import { rpc } from "../rpc";
 import { useToasts } from "../toasts";
 import LaserCanComponent from "./LaserCan";
+import OldVersionDevice from "./OldVersionDevice";
 
 type FactoryFunc = (info: DeviceInfo, invoke: (msg: any) => Promise<any>) => any;
 const FACTORIES: { [k: string]: FactoryFunc } = {
-  // [JSON.stringify({ Grapple: "SpiderLan" })]: (info, invoke) => <SpiderLanComponent info={info} invoke={invoke} />,
-  [JSON.stringify({ Grapple: "LaserCan" })]: (info, invoke) => <LaserCanComponent info={info} invoke={invoke} />,
+  "OldVersionDevice": (info, invoke) => <OldVersionDevice info={info} invoke={invoke} />,
+  "LaserCAN": (info, invoke) => <LaserCanComponent info={info} invoke={invoke} />,
 };
-const getFactory = (device_type: DeviceType) => FACTORIES[JSON.stringify(device_type)]
+const getFactory = (device_class: string) => FACTORIES[device_class]
 
 export const renderDeviceType = (deviceType: DeviceType) => {
   if (deviceType == "RoboRIO") {
@@ -30,12 +31,13 @@ export const renderDeviceType = (deviceType: DeviceType) => {
 type DeviceComponentProps = {
   id: DeviceId, 
   info: DeviceInfo,
+  device_class: string,
   invoke: (msg: any) => Promise<any>
 }
 
 export function DeviceComponent(props: DeviceComponentProps) {
-  const { id, info, invoke } = props;
-  let factory = getFactory(info.device_type);
+  const { id, info, device_class, invoke } = props;
+  let factory = getFactory(device_class);
 
   return <React.Fragment>
     {
@@ -54,7 +56,7 @@ export function DeviceComponent(props: DeviceComponentProps) {
 
     {
       factory !== undefined ? factory(info, invoke)
-        : <Bug specifics={`Unknown Device Type: ${JSON.stringify(info.device_type)}`} />
+        : <Bug specifics={`Unknown Device Type: ${JSON.stringify(info.device_type)} (${device_class})`} />
     }
   </React.Fragment>
 }

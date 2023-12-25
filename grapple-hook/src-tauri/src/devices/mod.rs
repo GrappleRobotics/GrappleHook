@@ -8,7 +8,8 @@ use std::{sync::Arc, time::Duration, collections::{LinkedList, HashMap}};
 
 use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, Message, DEVICE_ID_BROADCAST, ManufacturerMessage, binmarshal::{LengthTaggedVec, BinMarshal}, MessageId};
 use grapple_hook_macros::rpc;
-use log::info;
+use log::{info, warn};
+use semver::{Version, VersionReq};
 use serde::{Serialize, Deserialize};
 use tokio::sync::{mpsc, RwLock, Notify, oneshot};
 use uuid::Uuid;
@@ -89,7 +90,12 @@ impl DeviceInfo {
 
 #[async_trait::async_trait]
 pub trait Device : RpcBase {
-  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> { Ok(()) }
+  async fn handle(&self, _msg: TaggedGrappleMessage) -> anyhow::Result<()> { Ok(()) }
+}
+
+#[async_trait::async_trait]
+pub trait RootDevice : Device {
+  fn device_class(&self) -> &'static str;
 }
 
 pub type SharedInfo = Arc<RwLock<DeviceInfo>>;
@@ -250,157 +256,77 @@ impl Device for FirmwareUpgradeDevice {
   }
 }
 
-// pub trait RpcDevice : Device + Rpc<RpcT = DeviceRPC> + RpcWithState<State = DeviceState> {}
+#[async_trait::async_trait]
+pub trait VersionGatedDevice : RootDevice + Sized + Sync + 'static {
+  fn validate_version(version: Option<String>) -> anyhow::Result<()>;
+  fn firmware_url() -> Option<String>;
 
-// #[async_trait::async_trait]
-// pub trait BasicDevice : Sync {
-//   fn capabilities(&self) -> Vec<Capability>;
+  fn require_version(version: Option<String>, req: &str) -> anyhow::Result<()> {
+    if let Some(v) = version {
+      let v = Version::parse(&v)?;
+      if !VersionReq::parse(req)?.matches(&v) {
+        anyhow::bail!("Invalid version: {}, expected: {}", v, req);
+      }
+    }
+    Ok(())
+  }
 
-//   async fn info(&self) -> DeviceInfo;
-//   async fn set_info(&self, info: DeviceInfo);
+  async fn maybe_gate<F: FnOnce(SendWrapper, Arc<RwLock<DeviceInfo>>) -> Self + Send>(send: SendWrapper, info: Arc<RwLock<DeviceInfo>>, create_fn: F) -> Box<dyn RootDevice + Send + Sync + 'static> {
+    match Self::validate_version(info.clone().read().await.firmware_version.clone()) {
+      Ok(_) => Box::new(create_fn(send, info)),
+      Err(e) => Box::new(OldVersionDevice::new(send, info, format!("{}", e), Self::firmware_url()))
+    }
+  }
+}
 
-//   async fn send_now(&self, message: Message) -> anyhow::Result<()>;
-//   async fn handle_msg(&self, msg: Message) -> anyhow::Result<()>;
+pub struct OldVersionDevice {
+  grapple_device: GrappleDevice,
+  firmware_upgrade_device: FirmwareUpgradeDevice,
+  error: String,
+  firmware_url: Option<String>
+}
 
-//   async fn rpc_specific(&self, data: serde_json::Value) -> RpcResult;
-//   async fn state_specific(&self) -> serde_json::Value;
-// }
+impl OldVersionDevice {
+  pub fn new(sender: SendWrapper, info: SharedInfo, error: String, firmware_url: Option<String>) -> Self {
+    Self {
+      grapple_device: GrappleDevice::new(sender.clone(), info.clone()),
+      firmware_upgrade_device: FirmwareUpgradeDevice::new(sender.clone(), info.clone()),
+      error, firmware_url
+    }
+  }
+}
 
-// // TODO: Split out into different classes, composed based on capabilities
-// // SpiderLan > FirmwareUpgradableDevice > GrappleDevice > BasicDevice
+#[async_trait::async_trait]
+impl Device for OldVersionDevice {
+  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+    self.grapple_device.handle(msg.clone()).await?;
+    self.firmware_upgrade_device.handle(msg).await?;
+    Ok(())
+  }
+}
 
-// #[async_trait::async_trait]
-// pub trait Device : BasicDevice {
-//   async fn handle(&self, message: Message) -> anyhow::Result<()>;
+#[async_trait::async_trait]
+impl RootDevice for OldVersionDevice {
+  fn device_class(&self) -> &'static str {
+    "OldVersionDevice"
+  }
+}
 
-//   async fn send(&self, mut message: Message) -> anyhow::Result<()> {
-//     message.update().map_err(|e| anyhow::anyhow!("Update Error: {}", e))?;
-//     message.validate().map_err(|e| anyhow::anyhow!("Validation Error: {}", e))?;
-//     self.send_now(message).await?;
-//     Ok(())
-//   }
-//   async fn blink(&self) -> anyhow::Result<()> { anyhow::bail!("Blink is unsupported on this device") }
-//   async fn set_id(&self, id: u8) -> anyhow::Result<()> { anyhow::bail!("Set ID is unsupported on this device") }
-//   async fn set_name(&self, name: String) -> anyhow::Result<()> { anyhow::bail!("Set Name is unsupported on this device") }
-//   async fn commit(&self) -> anyhow::Result<()> { anyhow::bail!("Commit is unsupported on this device") }
-//   async fn start_field_upgrade(&self) -> anyhow::Result<()> { anyhow::bail!("Start Field Upgrade is unsupported on this device") }
-//   async fn do_field_upgrade(&self, data: Vec<u8>) -> anyhow::Result<()> { anyhow::bail!("Do Field Upgrade is unsupported on this device") }
-// }
+#[rpc]
+impl OldVersionDevice {
+  async fn get_error(&self) -> anyhow::Result<String> {
+    Ok(self.error.clone())
+  }
 
-// #[macro_export]
-// macro_rules! grapple_device_impl {
-//   ($cls:ident) => {
-//     #[async_trait::async_trait]
-//     impl crate::devices::Device for $cls {
-//       async fn handle(&self, message: Message) -> anyhow::Result<()> {
-//         BasicDevice::handle_msg(self, message).await
-//       }
+  async fn get_firmware_url(&self) -> anyhow::Result<Option<String>> {
+    Ok(self.firmware_url.clone())
+  }
 
-//       async fn blink(&self) -> anyhow::Result<()> {
-//         if let Some(serial) = self.info().await.serial {
-//           self.send(Message::new(
-//             grapple_frc_msgs::DEVICE_ID_BROADCAST,
-//             ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(
-//               grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::Blink { serial }
-//             )))
-//           )).await?;
-//           Ok(())
-//         } else {
-//           anyhow::bail!("Can't Blink a non-Grapple Device!")
-//         }
-//       }
+  async fn grapple(&self, msg: GrappleDeviceRequest) -> anyhow::Result<GrappleDeviceResponse> {
+    self.grapple_device.rpc_process(msg).await
+  }
 
-//       async fn set_id(&self, id: u8) -> anyhow::Result<()> {
-//         if let Some(serial) = self.info().await.serial {
-//           self.send(Message::new(
-//             grapple_frc_msgs::DEVICE_ID_BROADCAST,
-//             ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(
-//               grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::SetId { serial, new_id: id }
-//             )))
-//           )).await?;
-//           Ok(())
-//         } else {
-//           anyhow::bail!("Can't Set ID of a non-Grapple Device!")
-//         }
-//       }
-
-//       async fn set_name(&self, name: String) -> anyhow::Result<()> {
-//         if let Some(serial) = self.info().await.serial {
-//           self.send(Message::new(
-//             grapple_frc_msgs::DEVICE_ID_BROADCAST,
-//             ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(
-//               grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::SetName { serial, name_len: name.len() as u8, name: name.as_bytes().to_vec() }
-//             )))
-//           )).await?;
-//           Ok(())
-//         } else {
-//           anyhow::bail!("Can't Set Name of a non-Grapple Device!")
-//         }
-//       }
-
-//       async fn commit(&self) -> anyhow::Result<()> {
-//         if let Some(serial) = self.info().await.serial {
-//           self.send(Message::new(
-//             grapple_frc_msgs::DEVICE_ID_BROADCAST,
-//             ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(
-//               grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::CommitConfig { serial }
-//             )))
-//           )).await?;
-//           Ok(())
-//         } else {
-//           anyhow::bail!("Can't Commit to EEPROM for a non-Grapple Device!")
-//         }
-//       }
-
-//       async fn start_field_upgrade(&self) -> anyhow::Result<()> {
-//         if let Some(serial) = self.info().await.serial {
-//           self.send(Message::new(
-//             grapple_frc_msgs::DEVICE_ID_BROADCAST,
-//             ManufacturerMessage::Grapple(grapple_frc_msgs::grapple::GrappleDeviceMessage::FirmwareUpdate(
-//               grapple_frc_msgs::grapple::firmware::GrappleFirmwareMessage::StartFieldUpgrade { serial }
-//             ))
-//           )).await?;
-//           Ok(())
-//         } else {
-//           anyhow::bail!("Can't Commit to EEPROM for a non-Grapple Device!")
-//         }
-//       }
-//     }
-//   }
-// }
-
-// #[macro_export]
-// macro_rules! device_rpc_impl {
-//   ($cls:ident) => {
-//     #[async_trait::async_trait]
-//     impl crate::rpc::Rpc for $cls  {
-//       type RpcT = crate::devices::DeviceRPC;
-//       async fn rpc(&self, data: Self::RpcT) -> crate::rpc::RpcResult {
-//         use crate::devices::Device;
-//         match data {
-//           crate::devices::DeviceRPC::Blink => { self.blink().await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::SetId(id) => { self.set_id(id).await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::SetName(name) => { self.set_name(name).await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::Commit => { self.commit().await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::StartFieldUpgrade => { self.start_field_upgrade().await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::DoFieldUpgrade(data) => { self.do_field_upgrade(data).await?; crate::rpc::to_rpc_result(()) },
-//           crate::devices::DeviceRPC::Specific(msg) => self.rpc_specific(msg).await
-//         }
-//       }
-//     }
-
-//     #[async_trait::async_trait]
-//     impl crate::rpc::RpcWithState for $cls {
-//       type State = crate::devices::DeviceState;
-//       async fn state(&self) -> Self::State {
-//         crate::devices::DeviceState {
-//           info: self.info().await,
-//           capabilities: self.capabilities(),
-//           specific: self.state_specific().await
-//         }
-//       }
-//     }
-//   }
-// }
-
-// impl<T> RpcDevice for T where T: Device + Rpc<RpcT = DeviceRPC> + RpcWithState<State = DeviceState> {}
+  async fn firmware(&self, msg: FirmwareUpgradeDeviceRequest) -> anyhow::Result<FirmwareUpgradeDeviceResponse> {
+    self.firmware_upgrade_device.rpc_process(msg).await
+  }
+}

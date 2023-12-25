@@ -20,7 +20,7 @@ export default function ProviderManagerComponent(props: ProviderManagerProps) {
   const { addError } = useToasts();
 
   const [ providers, setProviders ] = useState<{ [key: string]: ProviderInfo }>({});
-  const [ devices, setDevices ] = useState<{ [key: string]: { [domain: string]: [DeviceId, DeviceInfo][] } }>({});
+  const [ devices, setDevices ] = useState<{ [key: string]: { [domain: string]: [DeviceId, DeviceInfo, string][] } }>({});
 
   const provider_rpc = (address: string) => {
     return async (msg: WrappedDeviceProviderRequest) => {
@@ -79,8 +79,8 @@ export default function ProviderManagerComponent(props: ProviderManagerProps) {
                     </Nav.Link>
                   </Nav.Item>,
                   ...Object.keys(devices[key] || {}).flatMap(domain => [
-                    devices[key][domain].map(([device_id, device_info]) => (
-                      <DevicePillComponent provider_key={key} domain={domain} device_id={device_id} device_info={device_info} />
+                    devices[key][domain].map(([device_id, device_info, device_class]) => (
+                      <DevicePillComponent provider_key={key} domain={domain} device_id={device_id} device_info={device_info} device_class={device_class} />
                     ))
                   ])
                 ]
@@ -98,9 +98,9 @@ export default function ProviderManagerComponent(props: ProviderManagerProps) {
                     <ProviderComponent info={p} invoke={provider_rpc(p.address)} />
                   </Tab.Pane>,
                   ...Object.keys(devices[key] || {}).flatMap(domain => [
-                    devices[key][domain].map(([device_id, device_info]) => (
+                    devices[key][domain].map(([device_id, device_info, device_class]) => (
                       <Tab.Pane eventKey={`device-${key}-${domain}-${JSON.stringify(device_id)}`}>
-                        <DeviceComponent id={device_id} info={device_info} invoke={device_rpc(p.address, domain, device_id)} />
+                        <DeviceComponent id={device_id} info={device_info} device_class={device_class} invoke={device_rpc(p.address, domain, device_id)} />
                       </Tab.Pane>
                     ))
                   ])
@@ -114,7 +114,7 @@ export default function ProviderManagerComponent(props: ProviderManagerProps) {
   </React.Fragment>
 }
 
-export function DevicePillComponent(props: { provider_key: string, domain: string, device_id: DeviceId, device_info: DeviceInfo }) {
+export function DevicePillComponent(props: { provider_key: string, domain: string, device_id: DeviceId, device_info: DeviceInfo, device_class: string }) {
   const { provider_key, domain, device_id, device_info } = props;
   return <Nav.Item className="device-list-device">
      <Nav.Link eventKey={`device-${provider_key}-${domain}-${JSON.stringify(device_id)}`}>
