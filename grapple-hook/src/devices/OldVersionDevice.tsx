@@ -3,7 +3,7 @@ import { DeviceInfo, OldVersionDeviceRequest, OldVersionDeviceResponse } from ".
 import { useToasts } from "../toasts";
 import { rpc } from "../rpc";
 import { Alert, Col, Row } from "react-bootstrap";
-import { GrappleDeviceHeaderComponent } from "./Device";
+import { FirmwareUpdateComponent, GrappleDeviceHeaderComponent } from "./Device";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
@@ -18,6 +18,9 @@ export default function OldVersionDevice(props: OldVersionDeviceComponentProps) 
 
   const [ versionError, setVersionError ] = useState<string>("Invalid Version");
   const [ firmwareUrl, setFirmwareUrl ] = useState<string | null>(null);
+
+  if (info.is_dfu)
+    return <FirmwareUpdateComponent invoke={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "firmware">(invoke, "firmware", { msg })} />;
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -54,7 +57,7 @@ export default function OldVersionDevice(props: OldVersionDeviceComponentProps) 
         <strong> Click <span className="text-purple">"Firmware Update"</span> and upload a new firmware version! </strong>
         <br />
         {
-          firmwareUrl && <span> Download Firmware Here: <a href={firmwareUrl} style={{ color: "blue" }}>{ firmwareUrl }</a> </span>
+          firmwareUrl && <span> Download Firmware Here: <a href={firmwareUrl} style={{ color: "blue" }} target="_blank">{ firmwareUrl }</a> </span>
         }
       </Alert>
     </Row>
