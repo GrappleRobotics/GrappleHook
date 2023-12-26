@@ -1,9 +1,9 @@
-use grapple_frc_msgs::{grapple::{Request, errors::{GrappleError, CowStr}, lasercan::{LaserCanStatusFrame, LaserCanMessage, LaserCanRoi}, GrappleDeviceMessage, TaggedGrappleMessage}, DEVICE_ID_BROADCAST, Message, ManufacturerMessage, request_factory};
+use grapple_frc_msgs::{grapple::{Request, errors::{GrappleError, CowStr}, lasercan::{LaserCanStatusFrame, LaserCanMessage, LaserCanRoi}, GrappleDeviceMessage, TaggedGrappleMessage, device_info::GrappleModelId}, DEVICE_ID_BROADCAST, request_factory};
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
 use crate::rpc::RpcBase;
-use super::{SendWrapper, SharedInfo, GrappleDevice, FirmwareUpgradeDevice, Device, FirmwareUpgradeDeviceRequest, GrappleDeviceRequest, GrappleDeviceResponse, FirmwareUpgradeDeviceResponse, VersionGatedDevice, RootDevice};
+use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest, GrappleDeviceResponse, VersionGatedDevice, RootDevice, start_field_upgrade, FirmwareValidatingDevice};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LaserCanStatus {
@@ -72,11 +72,21 @@ impl Device for LaserCan {
   }
 }
 
+impl FirmwareValidatingDevice for LaserCan {
+  fn validate_firmware(_info: &super::DeviceInfo, buf: &[u8]) -> anyhow::Result<()> {
+    if &buf[0x150..0x154] == &[0xBEu8, 0xBAu8, 0xFEu8, 0xCAu8] && buf[0x15c] == (GrappleModelId::LaserCan as u8) {
+      Ok(())
+    } else {
+      anyhow::bail!("Invalid Firmware File. Are you sure this is the correct firmware?")
+    }
+  }
+}
+
 #[rpc]
 impl LaserCan {
   async fn start_field_upgrade(&self) -> anyhow::Result<()> {
     let serial = self.info.read().await.require_serial()?;
-    FirmwareUpgradeDevice::start_field_upgrade(&self.sender, serial).await
+    start_field_upgrade(&self.sender, serial).await
   }
 
   async fn set_range(&self, long: bool) -> anyhow::Result<()> {

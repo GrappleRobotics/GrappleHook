@@ -77,8 +77,8 @@ impl DeviceManager {
       let send = super::SendWrapper(self.send.get(domain).unwrap().clone(), self.replies_waiting.get(domain).unwrap().clone());
 
       let device = match (&id, device_type) {
-        (DeviceId::Dfu(..), _) => Box::new(FirmwareUpgradeDevice::new(send, info_arc.clone())),
-        (_, DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
+        (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::LaserCan)) => Box::new(FirmwareUpgradeDevice::<LaserCan>::new(send, info_arc.clone())),
+        (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
         _ => unreachable!()
       };
 

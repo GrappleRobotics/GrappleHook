@@ -172,6 +172,13 @@ pub fn rpc(_attr: TokenStream, input: TokenStream) -> TokenStream {
         _ => Err("Not a path!").unwrap(),
     };
 
+    let boundless_generics = generics.params.iter().map(|x| match x {
+        syn::GenericParam::Lifetime(lt) => { let l = &lt.lifetime; quote!{ #l } },
+        syn::GenericParam::Type(t) => { let t = &t.ident; quote! { #t } },
+        syn::GenericParam::Const(_c) => quote!{},
+    });
+    let boundless_generics2 = boundless_generics.clone();
+
     let items = t.items.iter();
 
     let fns = t.items.iter().filter_map(|x| match x {
@@ -230,7 +237,7 @@ pub fn rpc(_attr: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     // TODO: These need to eject the inner type from anyhow::Result.
-    quote! {
+    let q = quote! {
         #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
         #[serde(tag="method", content="data")]
         pub enum #request_enum_ident {
@@ -251,12 +258,14 @@ pub fn rpc(_attr: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[async_trait::async_trait]
-        impl RpcBase for #ty {
+        impl #generics RpcBase for #ty {
             async fn rpc_call(&self, data: serde_json::Value) -> anyhow::Result<serde_json::Value> {
                 serde_json::to_value(self.rpc_process(serde_json::from_value(data).map_err(|e| anyhow::anyhow!(e))?).await?).map_err(|e| anyhow::anyhow!(e))
             }
         }
-    }.into()
+    };
+
+    q.into()
 }
 
 /* Helpers */

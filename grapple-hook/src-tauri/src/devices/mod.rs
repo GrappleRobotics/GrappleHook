@@ -4,7 +4,7 @@ pub mod provider_manager;
 pub mod roborio;
 pub mod lasercan;
 
-use std::{sync::Arc, time::Duration, collections::{LinkedList, HashMap}};
+use std::{sync::Arc, time::Duration, collections::{LinkedList, HashMap}, marker::PhantomData};
 
 use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, Message, DEVICE_ID_BROADCAST, ManufacturerMessage, binmarshal::{LengthTaggedVec, BinMarshal}, MessageId};
 use grapple_hook_macros::rpc;
@@ -165,16 +165,17 @@ impl Device for GrappleDevice {}
 
 /* FIRMWARE UPGRADE DEVICE */
 
-pub struct FirmwareUpgradeDevice {
+pub struct FirmwareUpgradeDevice<T: FirmwareValidatingDevice> {
   sender: SendWrapper,
   info: SharedInfo,
   progress: Arc<RwLock<Option<f64>>>,
-  ack: Arc<Notify>
+  ack: Arc<Notify>,
+  _t: PhantomData<T>
 }
 
-impl FirmwareUpgradeDevice {
+impl<T: FirmwareValidatingDevice> FirmwareUpgradeDevice<T> {
   pub fn new(sender: SendWrapper, info: SharedInfo) -> Self {
-    Self { sender, info, progress: Arc::new(RwLock::new(None)), ack: Arc::new(Notify::new()) }
+    Self { sender, info, progress: Arc::new(RwLock::new(None)), ack: Arc::new(Notify::new()), _t: PhantomData }
   }
 
   pub async fn field_upgrade_worker(sender: SendWrapper, id: u8, data: &[u8], progress: Arc<RwLock<Option<f64>>>, ack: Arc<Notify>) -> anyhow::Result<()> {
@@ -207,20 +208,22 @@ impl FirmwareUpgradeDevice {
 
     Ok(())
   }
+}
 
-  pub async fn start_field_upgrade(sender: &SendWrapper, serial: u32) -> anyhow::Result<()> {
-    sender.send(TaggedGrappleMessage::new(
-      DEVICE_ID_BROADCAST,
-      GrappleDeviceMessage::FirmwareUpdate(
-        GrappleFirmwareMessage::StartFieldUpgrade { serial }
-      )
-    )).await
-  }
+pub async fn start_field_upgrade(sender: &SendWrapper, serial: u32) -> anyhow::Result<()> {
+  sender.send(TaggedGrappleMessage::new(
+    DEVICE_ID_BROADCAST,
+    GrappleDeviceMessage::FirmwareUpdate(
+      GrappleFirmwareMessage::StartFieldUpgrade { serial }
+    )
+  )).await
 }
 
 #[rpc]
-impl FirmwareUpgradeDevice {
+impl<T: FirmwareValidatingDevice + Send + Sync> FirmwareUpgradeDevice<T> {
   async fn do_field_upgrade(&self, data: Vec<u8>) -> anyhow::Result<()> {
+    <T>::validate_firmware(&*self.info.read().await, &data)?;
+
     let sender = self.sender.clone();
     let progress = self.progress.clone();
     let id = self.info.read().await.require_device_id()?;
@@ -238,14 +241,14 @@ impl FirmwareUpgradeDevice {
   }
 }
 
-impl RootDevice for FirmwareUpgradeDevice {
+impl<T: FirmwareValidatingDevice + Send + Sync> RootDevice for FirmwareUpgradeDevice<T> {
   fn device_class(&self) ->  &'static str {
     "GrappleFirmwareUpgrade"
   }
 }
 
 #[async_trait::async_trait]
-impl Device for FirmwareUpgradeDevice {
+impl<T: FirmwareValidatingDevice + Send + Sync> Device for FirmwareUpgradeDevice<T> {
   async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
     if msg.device_id == DEVICE_ID_BROADCAST || Some(msg.device_id) == self.info.read().await.device_id {
       match msg.clone().msg {
@@ -260,6 +263,10 @@ impl Device for FirmwareUpgradeDevice {
     }
     Ok(())
   }
+}
+
+pub trait FirmwareValidatingDevice {
+  fn validate_firmware(info: &DeviceInfo, buf: &[u8]) -> anyhow::Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -319,7 +326,7 @@ impl RootDevice for OldVersionDevice {
 impl OldVersionDevice {
   async fn start_field_upgrade(&self) -> anyhow::Result<()> {
     let serial = self.grapple_device.info.read().await.require_serial()?;
-    FirmwareUpgradeDevice::start_field_upgrade(&self.grapple_device.sender, serial).await
+    start_field_upgrade(&self.grapple_device.sender, serial).await
   }
 
   async fn get_error(&self) -> anyhow::Result<String> {
