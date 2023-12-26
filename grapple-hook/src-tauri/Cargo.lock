@@ -1172,7 +1172,7 @@ dependencies = [
 
 [[package]]
 name = "grapple-hook"
-version = "23.0.0"
+version = "24.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
