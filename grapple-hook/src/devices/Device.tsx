@@ -12,6 +12,7 @@ import OldVersionDevice from "./OldVersionDevice";
 type FactoryFunc = (info: DeviceInfo, invoke: (msg: any) => Promise<any>) => any;
 const FACTORIES: { [k: string]: FactoryFunc } = {
   "OldVersionDevice": (info, invoke) => <OldVersionDevice info={info} invoke={invoke} />,
+  "GrappleFirmwareUpgrade": (info, invoke) => <FirmwareUpdateComponent info={info} invoke={invoke} />,
   "LaserCAN": (info, invoke) => <LaserCanComponent info={info} invoke={invoke} />,
 };
 const getFactory = (device_class: string) => FACTORIES[device_class]
@@ -64,11 +65,11 @@ export function DeviceComponent(props: DeviceComponentProps) {
 type GrappleDeviceHeaderComponentProps = {
   info: DeviceInfo,
   invoke: (msg: GrappleDeviceRequest) => Promise<GrappleDeviceResponse>,
-  invoke_firmware?: (msg: FirmwareUpgradeDeviceRequest) => Promise<FirmwareUpgradeDeviceResponse>
+  start_dfu?: () => any,
 }
 
 export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponentProps) {
-  const { info, invoke, invoke_firmware } = props;
+  const { info, invoke, start_dfu } = props;
   const { addError } = useToasts();
 
   const changeId = async (serial: number, name: string, currentId: number) => {
@@ -112,8 +113,7 @@ export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponent
     });
 
     if (do_upgrade)
-      rpc<FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, "start_field_upgrade">(invoke_firmware!, "start_field_upgrade", {})
-        .catch(addError);
+      start_dfu!()
   }
 
   return <Row>
@@ -124,7 +124,7 @@ export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponent
     </Col>
     <Col md="auto">
       {
-        invoke_firmware && <Button size="sm" className="mx-1" variant="purple" onClick={startFieldUpgrade}> Firmware Upgrade </Button>
+        start_dfu && <Button size="sm" className="mx-1" variant="purple" onClick={startFieldUpgrade}> Firmware Upgrade </Button>
       }
       <Button size="sm" className="mx-1" variant="success" onClick={() => rpc<GrappleDeviceRequest, GrappleDeviceResponse, "commit_to_eeprom">(invoke, "commit_to_eeprom", {})}> Commit Configuration </Button>
     </Col>
@@ -132,6 +132,7 @@ export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponent
 }
 
 type FirmwareUpdateComponentProps = {
+  info: DeviceInfo,
   invoke: (msg: FirmwareUpgradeDeviceRequest) => Promise<FirmwareUpgradeDeviceResponse>
 }
 
@@ -145,7 +146,7 @@ export function FirmwareUpdateComponent(props: FirmwareUpdateComponentProps) {
     const interval = setInterval(() => {
       rpc<FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, "progress">(invoke, "progress", {})
         .then(setProgress)
-        .catch(addError);
+        .catch(e => {});    // Discard, it's usually a message to say that the device is disconnected and the UI fragment just hasn't been evicted yet.
     }, 250);
     return () => clearInterval(interval);
   }, [])

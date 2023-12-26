@@ -32,16 +32,13 @@ export default function OldVersionDevice(props: OldVersionDeviceComponentProps) 
     return () => clearTimeout(timeout);
   }, []);
 
-  if (info.is_dfu)
-    return <FirmwareUpdateComponent invoke={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "firmware">(invoke, "firmware", { msg })} />;
-
   return <div>
     <Row className="mb-2">
       <Col>
         <GrappleDeviceHeaderComponent
           info={info}
           invoke={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "grapple">(invoke, "grapple", { msg })}
-          invoke_firmware={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "firmware">(invoke, "firmware", { msg })}
+          start_dfu={async () => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "start_field_upgrade">(invoke, "start_field_upgrade", {})}
         />
       </Col>
     </Row>

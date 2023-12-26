@@ -45,7 +45,7 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
     const interval = setInterval(() => {
       rpc<LaserCanRequest, LaserCanResponse, "status">(invoke, "status", {})
         .then(setStatus)
-        .catch(addError);
+        .catch(e => {});  // Discard, it's usually a message to say that the device is disconnected and the UI fragment just hasn't been evicted yet.
     }, 50);
     return () => clearInterval(interval);
   }, []);
@@ -107,9 +107,6 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
     rpc<LaserCanRequest, LaserCanResponse, "set_roi">(invoke, "set_roi", { roi: new_roi }).catch(addError)
   }
 
-  if (info.is_dfu)
-    return <FirmwareUpdateComponent invoke={async (msg) => await rpc<LaserCanRequest, LaserCanResponse, "firmware">(invoke, "firmware", { msg })} />;
-
   if (status === undefined || status.last_update == null)
     return <div />;
   
@@ -121,7 +118,7 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
         <GrappleDeviceHeaderComponent
           info={info}
           invoke={async (msg) => await rpc<LaserCanRequest, LaserCanResponse, "grapple">(invoke, "grapple", { msg })}
-          invoke_firmware={async (msg) => await rpc<LaserCanRequest, LaserCanResponse, "firmware">(invoke, "firmware", { msg })}
+          start_dfu={async () => await rpc<LaserCanRequest, LaserCanResponse, "start_field_upgrade">(invoke, "start_field_upgrade", {})}
         />
       </Col>
     </Row>

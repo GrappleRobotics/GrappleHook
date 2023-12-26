@@ -15,7 +15,6 @@ pub struct LaserCan {
   info: SharedInfo,
 
   grapple_device: GrappleDevice,
-  firmware_upgrade_device: FirmwareUpgradeDevice,
 
   status: RwLock<LaserCanStatus>
 }
@@ -27,7 +26,6 @@ impl LaserCan {
       info: info.clone(),
 
       grapple_device: GrappleDevice::new(sender.clone(), info.clone()),
-      firmware_upgrade_device: FirmwareUpgradeDevice::new(sender.clone(), info.clone()),
 
       status: RwLock::new(LaserCanStatus { last_update: None })
     }
@@ -70,13 +68,17 @@ impl Device for LaserCan {
     }
     
     self.grapple_device.handle(msg.clone()).await?;
-    self.firmware_upgrade_device.handle(msg).await?;
     Ok(())
   }
 }
 
 #[rpc]
 impl LaserCan {
+  async fn start_field_upgrade(&self) -> anyhow::Result<()> {
+    let serial = self.info.read().await.require_serial()?;
+    FirmwareUpgradeDevice::start_field_upgrade(&self.sender, serial).await
+  }
+
   async fn set_range(&self, long: bool) -> anyhow::Result<()> {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetRange(data)));
@@ -107,10 +109,6 @@ impl LaserCan {
 
   async fn grapple(&self, msg: GrappleDeviceRequest) -> anyhow::Result<GrappleDeviceResponse> {
     self.grapple_device.rpc_process(msg).await
-  }
-
-  async fn firmware(&self, msg: FirmwareUpgradeDeviceRequest) -> anyhow::Result<FirmwareUpgradeDeviceResponse> {
-    self.firmware_upgrade_device.rpc_process(msg).await
   }
 
   async fn status(&self) -> anyhow::Result<LaserCanStatus> {

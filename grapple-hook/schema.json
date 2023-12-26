@@ -3,6 +3,8 @@
   "title": "MegaSchema",
   "type": "object",
   "required": [
+    "firmware_req",
+    "firmware_rsp",
     "lasercan_req",
     "lasercan_rsp",
     "old_version_req",
@@ -11,6 +13,12 @@
     "provider_manager_rsp"
   ],
   "properties": {
+    "firmware_req": {
+      "$ref": "#/definitions/FirmwareUpgradeDeviceRequest"
+    },
+    "firmware_rsp": {
+      "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
+    },
     "lasercan_req": {
       "$ref": "#/definitions/LaserCanRequest"
     },
@@ -36,10 +44,10 @@
         {
           "type": "object",
           "required": [
-            "Serial"
+            "Dfu"
           ],
           "properties": {
-            "Serial": {
+            "Dfu": {
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0
@@ -50,12 +58,12 @@
         {
           "type": "object",
           "required": [
-            "CanId"
+            "Serial"
           ],
           "properties": {
-            "CanId": {
+            "Serial": {
               "type": "integer",
-              "format": "uint8",
+              "format": "uint32",
               "minimum": 0.0
             }
           },
@@ -254,24 +262,6 @@
           ],
           "properties": {
             "data": {
-              "type": "object"
-            },
-            "method": {
-              "type": "string",
-              "enum": [
-                "start_field_upgrade"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "method"
-          ],
-          "properties": {
-            "data": {
               "type": "object",
               "required": [
                 "data"
@@ -317,24 +307,6 @@
     },
     "FirmwareUpgradeDeviceResponse": {
       "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "method"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "method": {
-              "type": "string",
-              "enum": [
-                "start_field_upgrade"
-              ]
-            }
-          }
-        },
         {
           "type": "object",
           "required": [
@@ -564,6 +536,24 @@
           ],
           "properties": {
             "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
               "type": "object",
               "required": [
                 "long"
@@ -670,32 +660,6 @@
           ],
           "properties": {
             "data": {
-              "type": "object",
-              "required": [
-                "msg"
-              ],
-              "properties": {
-                "msg": {
-                  "$ref": "#/definitions/FirmwareUpgradeDeviceRequest"
-                }
-              }
-            },
-            "method": {
-              "type": "string",
-              "enum": [
-                "firmware"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "method"
-          ],
-          "properties": {
-            "data": {
               "type": "object"
             },
             "method": {
@@ -710,6 +674,24 @@
     },
     "LaserCanResponse": {
       "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
         {
           "type": "object",
           "required": [
@@ -778,24 +760,6 @@
               "type": "string",
               "enum": [
                 "grapple"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "method"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
-            },
-            "method": {
-              "type": "string",
-              "enum": [
-                "firmware"
               ]
             }
           }
@@ -920,6 +884,24 @@
             "method": {
               "type": "string",
               "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
                 "get_error"
               ]
             }
@@ -968,7 +950,11 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "OldVersionDeviceResponse": {
+      "oneOf": [
         {
           "type": "object",
           "required": [
@@ -977,28 +963,16 @@
           ],
           "properties": {
             "data": {
-              "type": "object",
-              "required": [
-                "msg"
-              ],
-              "properties": {
-                "msg": {
-                  "$ref": "#/definitions/FirmwareUpgradeDeviceRequest"
-                }
-              }
+              "type": "null"
             },
             "method": {
               "type": "string",
               "enum": [
-                "firmware"
+                "start_field_upgrade"
               ]
             }
           }
-        }
-      ]
-    },
-    "OldVersionDeviceResponse": {
-      "oneOf": [
+        },
         {
           "type": "object",
           "required": [
@@ -1052,24 +1026,6 @@
               "type": "string",
               "enum": [
                 "grapple"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "method"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
-            },
-            "method": {
-              "type": "string",
-              "enum": [
-                "firmware"
               ]
             }
           }

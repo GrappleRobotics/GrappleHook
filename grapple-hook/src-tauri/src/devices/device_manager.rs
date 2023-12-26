@@ -13,14 +13,14 @@ use tokio::sync::{RwLock, mpsc, oneshot};
 use uuid::Uuid;
 
 use super::lasercan::LaserCan;
-use super::{DeviceType, Device, DeviceInfo, VersionGatedDevice, RootDevice};
+use super::{DeviceType, Device, DeviceInfo, VersionGatedDevice, RootDevice, FirmwareUpgradeDevice};
 // use super::{DeviceInfo, spiderlan::SpiderLAN};
 use crate::rpc::RpcBase;
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialEq, Eq)]
 pub enum DeviceId {
-  Serial(u32),
-  CanId(u8)
+  Dfu(/* Serial */ u32),      // Only for devices in DFU mode. Distinction is required since DFU devices have a different instantiated type.
+  Serial(/* Serial */ u32)
 }
 
 pub type Domain = String;
@@ -58,21 +58,34 @@ impl DeviceManager {
     }
   }
   
+  // TODO: if a device is in DFU mode, it should get its own device type. 
   async fn on_enumerate_response(&self, domain: &String, info: DeviceInfo) -> anyhow::Result<()> {
-    let id = DeviceId::Serial(info.serial.unwrap());
+    let id = match info.is_dfu {
+      false => DeviceId::Serial(info.serial.unwrap()),
+      true => DeviceId::Dfu(info.serial.unwrap())
+    };
+
     let now = std::time::Instant::now();
 
     let mut dev_map = self.devices.write().await;
     let devices = dev_map.get_mut(domain).unwrap();
+
     if !devices.contains_key(&id) {
       let device_type = info.device_type.clone();
       let info_arc = Arc::new(RwLock::new(info));
 
       let send = super::SendWrapper(self.send.get(domain).unwrap().clone(), self.replies_waiting.get(domain).unwrap().clone());
 
-      let device = match device_type {
-        DeviceType::Grapple(GrappleModelId::LaserCan) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
+      let device = match (&id, device_type) {
+        (DeviceId::Dfu(..), _) => Box::new(FirmwareUpgradeDevice::new(send, info_arc.clone())),
+        (_, DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
         _ => unreachable!()
+      };
+
+      /* If a device has gone from Serial to DFU, or the reverse, remove the old one so it doesn't linger. */
+      match &id {
+        DeviceId::Dfu(serial) => devices.remove(&DeviceId::Serial(*serial)),
+        DeviceId::Serial(serial) => devices.remove(&DeviceId::Dfu(*serial)),
       };
 
       devices.insert(id, DeviceEntry { device, info: info_arc, last_seen: now });

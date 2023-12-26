@@ -207,19 +207,19 @@ impl FirmwareUpgradeDevice {
 
     Ok(())
   }
+
+  pub async fn start_field_upgrade(sender: &SendWrapper, serial: u32) -> anyhow::Result<()> {
+    sender.send(TaggedGrappleMessage::new(
+      DEVICE_ID_BROADCAST,
+      GrappleDeviceMessage::FirmwareUpdate(
+        GrappleFirmwareMessage::StartFieldUpgrade { serial }
+      )
+    )).await
+  }
 }
 
 #[rpc]
 impl FirmwareUpgradeDevice {
-  async fn start_field_upgrade(&self) -> anyhow::Result<()> {
-    self.sender.send(TaggedGrappleMessage::new(
-      DEVICE_ID_BROADCAST,
-      GrappleDeviceMessage::FirmwareUpdate(
-        GrappleFirmwareMessage::StartFieldUpgrade { serial: self.info.read().await.require_serial()? }
-      )
-    )).await
-  }
-
   async fn do_field_upgrade(&self, data: Vec<u8>) -> anyhow::Result<()> {
     let sender = self.sender.clone();
     let progress = self.progress.clone();
@@ -235,6 +235,12 @@ impl FirmwareUpgradeDevice {
 
   async fn progress(&self) -> anyhow::Result<Option<f64>> {
     Ok(self.progress.read().await.clone())
+  }
+}
+
+impl RootDevice for FirmwareUpgradeDevice {
+  fn device_class(&self) ->  &'static str {
+    "GrappleFirmwareUpgrade"
   }
 }
 
@@ -281,7 +287,6 @@ pub trait VersionGatedDevice : RootDevice + Sized + Sync + 'static {
 
 pub struct OldVersionDevice {
   grapple_device: GrappleDevice,
-  firmware_upgrade_device: FirmwareUpgradeDevice,
   error: String,
   firmware_url: Option<String>
 }
@@ -290,7 +295,6 @@ impl OldVersionDevice {
   pub fn new(sender: SendWrapper, info: SharedInfo, error: String, firmware_url: Option<String>) -> Self {
     Self {
       grapple_device: GrappleDevice::new(sender.clone(), info.clone()),
-      firmware_upgrade_device: FirmwareUpgradeDevice::new(sender.clone(), info.clone()),
       error, firmware_url
     }
   }
@@ -300,7 +304,6 @@ impl OldVersionDevice {
 impl Device for OldVersionDevice {
   async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
     self.grapple_device.handle(msg.clone()).await?;
-    self.firmware_upgrade_device.handle(msg).await?;
     Ok(())
   }
 }
@@ -314,6 +317,11 @@ impl RootDevice for OldVersionDevice {
 
 #[rpc]
 impl OldVersionDevice {
+  async fn start_field_upgrade(&self) -> anyhow::Result<()> {
+    let serial = self.grapple_device.info.read().await.require_serial()?;
+    FirmwareUpgradeDevice::start_field_upgrade(&self.grapple_device.sender, serial).await
+  }
+
   async fn get_error(&self) -> anyhow::Result<String> {
     Ok(self.error.clone())
   }
@@ -324,9 +332,5 @@ impl OldVersionDevice {
 
   async fn grapple(&self, msg: GrappleDeviceRequest) -> anyhow::Result<GrappleDeviceResponse> {
     self.grapple_device.rpc_process(msg).await
-  }
-
-  async fn firmware(&self, msg: FirmwareUpgradeDeviceRequest) -> anyhow::Result<FirmwareUpgradeDeviceResponse> {
-    self.firmware_upgrade_device.rpc_process(msg).await
   }
 }

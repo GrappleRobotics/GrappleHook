@@ -5,7 +5,31 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type FirmwareUpgradeDeviceRequest =
+  | {
+      data: {
+        data: number[];
+      };
+      method: "do_field_upgrade";
+    }
+  | {
+      data: {};
+      method: "progress";
+    };
+export type FirmwareUpgradeDeviceResponse =
+  | {
+      data: null;
+      method: "do_field_upgrade";
+    }
+  | {
+      data: number | null;
+      method: "progress";
+    };
 export type LaserCanRequest =
+  | {
+      data: {};
+      method: "start_field_upgrade";
+    }
   | {
       data: {
         long: boolean;
@@ -29,12 +53,6 @@ export type LaserCanRequest =
         msg: GrappleDeviceRequest;
       };
       method: "grapple";
-    }
-  | {
-      data: {
-        msg: FirmwareUpgradeDeviceRequest;
-      };
-      method: "firmware";
     }
   | {
       data: {};
@@ -61,22 +79,11 @@ export type GrappleDeviceRequest =
       data: {};
       method: "commit_to_eeprom";
     };
-export type FirmwareUpgradeDeviceRequest =
+export type LaserCanResponse =
   | {
-      data: {};
+      data: null;
       method: "start_field_upgrade";
     }
-  | {
-      data: {
-        data: number[];
-      };
-      method: "do_field_upgrade";
-    }
-  | {
-      data: {};
-      method: "progress";
-    };
-export type LaserCanResponse =
   | {
       data: null;
       method: "set_range";
@@ -92,10 +99,6 @@ export type LaserCanResponse =
   | {
       data: GrappleDeviceResponse;
       method: "grapple";
-    }
-  | {
-      data: FirmwareUpgradeDeviceResponse;
-      method: "firmware";
     }
   | {
       data: LaserCanStatus;
@@ -118,20 +121,11 @@ export type GrappleDeviceResponse =
       data: null;
       method: "commit_to_eeprom";
     };
-export type FirmwareUpgradeDeviceResponse =
+export type OldVersionDeviceRequest =
   | {
-      data: null;
+      data: {};
       method: "start_field_upgrade";
     }
-  | {
-      data: null;
-      method: "do_field_upgrade";
-    }
-  | {
-      data: number | null;
-      method: "progress";
-    };
-export type OldVersionDeviceRequest =
   | {
       data: {};
       method: "get_error";
@@ -145,14 +139,12 @@ export type OldVersionDeviceRequest =
         msg: GrappleDeviceRequest;
       };
       method: "grapple";
-    }
-  | {
-      data: {
-        msg: FirmwareUpgradeDeviceRequest;
-      };
-      method: "firmware";
     };
 export type OldVersionDeviceResponse =
+  | {
+      data: null;
+      method: "start_field_upgrade";
+    }
   | {
       data: string;
       method: "get_error";
@@ -164,10 +156,6 @@ export type OldVersionDeviceResponse =
   | {
       data: GrappleDeviceResponse;
       method: "grapple";
-    }
-  | {
-      data: FirmwareUpgradeDeviceResponse;
-      method: "firmware";
     };
 export type ProviderManagerRequest =
   | {
@@ -221,10 +209,10 @@ export type DeviceManagerRequest =
     };
 export type DeviceId =
   | {
-      Serial: number;
+      Dfu: number;
     }
   | {
-      CanId: number;
+      Serial: number;
     };
 export type ProviderManagerResponse =
   | {
@@ -277,6 +265,8 @@ export type DeviceType =
 export type GrappleModelId = "LaserCan" | "SpiderLan";
 
 export interface MegaSchema {
+  firmware_req: FirmwareUpgradeDeviceRequest;
+  firmware_rsp: FirmwareUpgradeDeviceResponse;
   lasercan_req: LaserCanRequest;
   lasercan_rsp: LaserCanResponse;
   old_version_req: OldVersionDeviceRequest;
