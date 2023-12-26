@@ -19,9 +19,6 @@ export default function OldVersionDevice(props: OldVersionDeviceComponentProps) 
   const [ versionError, setVersionError ] = useState<string>("Invalid Version");
   const [ firmwareUrl, setFirmwareUrl ] = useState<string | null>(null);
 
-  if (info.is_dfu)
-    return <FirmwareUpdateComponent invoke={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "firmware">(invoke, "firmware", { msg })} />;
-
   useEffect(() => {
     const timeout = setTimeout(() => {
       rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "get_error">(invoke, "get_error", {})
@@ -34,6 +31,9 @@ export default function OldVersionDevice(props: OldVersionDeviceComponentProps) 
     }, 100);
     return () => clearTimeout(timeout);
   }, []);
+
+  if (info.is_dfu)
+    return <FirmwareUpdateComponent invoke={async (msg) => await rpc<OldVersionDeviceRequest, OldVersionDeviceResponse, "firmware">(invoke, "firmware", { msg })} />;
 
   return <div>
     <Row className="mb-2">
