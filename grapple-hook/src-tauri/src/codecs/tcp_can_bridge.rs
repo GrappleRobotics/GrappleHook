@@ -1,11 +1,12 @@
+use bounded_static::IntoBoundedStatic;
 use bytes::{BufMut, Buf};
-use grapple_frc_msgs::{binmarshal::{BinMarshal, BitView, VecBitWriter, BitWriter}, bridge::BridgedCANMessage};
+use grapple_frc_msgs::{binmarshal::{BitView, VecBitWriter, BitWriter, Marshal, Demarshal}, bridge::BridgedCANMessage};
 use tokio_util::codec::{Decoder, Encoder};
 
 pub struct GrappleTcpCanBridgeCodec;
 
 impl Decoder for GrappleTcpCanBridgeCodec {
-  type Item = BridgedCANMessage;
+  type Item = BridgedCANMessage<'static>;
   type Error = anyhow::Error;
 
   fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -26,17 +27,17 @@ impl Decoder for GrappleTcpCanBridgeCodec {
     src.advance(2 + length);
 
     BridgedCANMessage::read(&mut BitView::new(&data[..]), ())
-      .map(|x| Some(x))
-      .ok_or(anyhow::anyhow!("Could not decode!"))
+      .map(|x| Some(x.into_static()))
+      .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
   }
 }
 
-impl Encoder<BridgedCANMessage> for GrappleTcpCanBridgeCodec {
+impl Encoder<BridgedCANMessage<'_>> for GrappleTcpCanBridgeCodec {
   type Error = anyhow::Error;
 
-  fn encode(&mut self, item: BridgedCANMessage, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
+  fn encode(&mut self, item: BridgedCANMessage<'_>, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
     let mut writer = VecBitWriter::new();
-    item.write(&mut writer, ());
+    item.write(&mut writer, ()).map_err(|e| anyhow::anyhow!(format!("{:?}", e)))?;
     let bytes = writer.slice();
     
     dst.reserve(2 + bytes.len());

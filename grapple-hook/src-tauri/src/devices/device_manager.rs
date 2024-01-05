@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::str;
 use std::sync::Arc;
 
@@ -7,13 +8,13 @@ use grapple_frc_msgs::MessageId;
 use grapple_frc_msgs::DEVICE_ID_BROADCAST;
 use grapple_frc_msgs::grapple::{GrappleDeviceMessage, GrappleBroadcastMessage, device_info::{GrappleDeviceInfo, GrappleModelId}};
 use grapple_hook_macros::rpc;
-use log::warn;
+use log::{warn, info};
 use serde::{Serialize, Deserialize};
 use tokio::sync::{RwLock, mpsc, oneshot};
 use uuid::Uuid;
 
 use super::lasercan::LaserCan;
-use super::{DeviceType, Device, DeviceInfo, VersionGatedDevice, RootDevice, FirmwareUpgradeDevice};
+use super::{DeviceType, DeviceInfo, VersionGatedDevice, RootDevice, FirmwareUpgradeDevice};
 // use super::{DeviceInfo, spiderlan::SpiderLAN};
 use crate::rpc::RpcBase;
 
@@ -31,16 +32,16 @@ pub struct DeviceEntry {
   last_seen: std::time::Instant
 }
 
-pub type RepliesWaiting = Arc<RwLock<HashMap<u32, HashMap<Uuid, oneshot::Sender<TaggedGrappleMessage>>>>>;
+pub type RepliesWaiting = Arc<RwLock<HashMap<u32, HashMap<Uuid, oneshot::Sender<TaggedGrappleMessage<'static>>>>>>;
 
 pub struct DeviceManager {
-  send: HashMap<Domain, mpsc::Sender<TaggedGrappleMessage>>,
+  send: HashMap<Domain, mpsc::Sender<TaggedGrappleMessage<'static>>>,
   replies_waiting: HashMap<Domain, RepliesWaiting>,
   devices: RwLock<HashMap<Domain, HashMap<DeviceId, DeviceEntry>>>,
 }
 
 impl DeviceManager {
-  pub fn new(send: HashMap<Domain, mpsc::Sender<TaggedGrappleMessage>>) -> Self {
+  pub fn new(send: HashMap<Domain, mpsc::Sender<TaggedGrappleMessage<'static>>>) -> Self {
     let mut devices = HashMap::new();
     let mut replies_waiting = HashMap::new();
 
@@ -112,7 +113,7 @@ impl DeviceManager {
   //   Ok(())
   // }
 
-  pub async fn on_message(&self, domain: String, id: GrappleMessageId, message: TaggedGrappleMessage) -> anyhow::Result<()> {
+  pub async fn on_message(&self, domain: String, id: GrappleMessageId, message: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     let msg_id_u32: u32 = Into::<MessageId>::into(id).into();
 
     let waiting = self.replies_waiting.get(&domain).unwrap();
@@ -128,11 +129,11 @@ impl DeviceManager {
         GrappleDeviceInfo::EnumerateResponse { model_id, serial, is_dfu, is_dfu_in_progress, name, version } => {
           self.on_enumerate_response(&domain, DeviceInfo {
             device_type: DeviceType::Grapple(model_id),
-            firmware_version: Some(version),
+            firmware_version: Some(version.into_owned()),
             serial: Some(serial),
             is_dfu,
             is_dfu_in_progress,
-            name: Some(name),
+            name: Some(name.into_owned()),
             device_id: Some(message.device_id)
           }).await?;
         },

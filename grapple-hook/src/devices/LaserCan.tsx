@@ -6,7 +6,7 @@ import { Button, Col, FormControl, FormSelect, ProgressBar, Row } from "react-bo
 import SimpleTooltip from "../SimpleTooltip";
 import { confirmModal } from "../Confirm";
 import "./LaserCan.scss";
-import { DeviceInfo, LaserCanRequest, LaserCanResponse, LaserCanStatus } from "../schema";
+import { DeviceInfo, LaserCanRequest, LaserCanResponse, LaserCanStatus, LaserCanTimingBudget } from "../schema";
 import { useToasts } from "../toasts";
 import { rpc } from "../rpc";
 import { FirmwareUpdateComponent, GrappleDeviceHeaderComponent } from "./Device";
@@ -50,13 +50,16 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const setRange = async (long: boolean) => {
-    rpc<LaserCanRequest, LaserCanResponse, "set_range">(invoke, "set_range", { long }).catch(addError)
+  const toggleRange = async () => {
+    if (status?.last_update?.mode === "Long")
+      rpc<LaserCanRequest, LaserCanResponse, "set_range">(invoke, "set_range", { mode: "Short" }).catch(addError)
+    else
+      rpc<LaserCanRequest, LaserCanResponse, "set_range">(invoke, "set_range", { mode: "Long" }).catch(addError)
   }
   
   const changeTimingBudget = async () => {
-    let new_budget = Number(await confirmModal("", {
-      data: String(status?.last_update!.budget_ms),
+    let new_budget = await confirmModal("", {
+      data: String(status?.last_update!.budget),
       title: "Set New Timing Budget",
       okText: "Set Timing Budget",
       renderInner: (n: string, onUpdate) => <React.Fragment>
@@ -64,16 +67,15 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
         <p className="tip"> <FontAwesomeIcon icon={faInfoCircle} /> The Timing Budget is how long each measurement is taken for. Smaller values
         will give you faster results, but will be less accurate. </p>
         <FormSelect value={n} onChange={e => onUpdate(e.target.value)}>
-          <option value={20}>20ms</option>
-          <option value={33}>33ms</option>
-          <option value={50}>50ms</option>
-          <option value={100}>100ms</option>
+          <option value="TB20ms">TB20ms</option>
+          <option value="TB33ms">TB33ms</option>
+          <option value="TB50ms">TB50ms</option>
+          <option value="TB100ms">TB100ms</option>
         </FormSelect>
       </React.Fragment>
-    }));
+    });
 
-    let budget = Number(new_budget) || 20
-    rpc<LaserCanRequest, LaserCanResponse, "set_timing_budget">(invoke, "set_timing_budget", { budget }).catch(addError)
+    rpc<LaserCanRequest, LaserCanResponse, "set_timing_budget">(invoke, "set_timing_budget", { budget: new_budget as LaserCanTimingBudget }).catch(addError)
   }
 
   const changeROI = async () => {
@@ -110,7 +112,7 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
   if (status === undefined || status.last_update == null)
     return <div />;
   
-  const { roi, long, distance_mm, budget_ms, ambient } = status.last_update;
+  const { roi, mode, distance_mm, budget, ambient } = status.last_update;
 
   return <div className="lasercan">
     <Row className="mb-2">
@@ -125,13 +127,13 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
     <Row className="mb-2">
       <Col md={3} className="device-field-label"> Ranging Mode </Col>
       <Col md={3}>
-        { long ? "LONG" : "SHORT" }
-        { long && <span className="text-warning"><SimpleTooltip id="long-range-tip" tip="Long Range is more susceptible to ambient light noise"> <FontAwesomeIcon icon={faTriangleExclamation} /> </SimpleTooltip></span> } &nbsp;
-        <Button size="sm" onClick={() => setRange(!long)}> <FontAwesomeIcon icon={faShuffle} /> </Button>
+        { mode.toUpperCase() }
+        { mode === "Long" && <span className="text-warning"><SimpleTooltip id="long-range-tip" tip="Long Range is more susceptible to ambient light noise"> <FontAwesomeIcon icon={faTriangleExclamation} /> </SimpleTooltip></span> } &nbsp;
+        <Button size="sm" onClick={() => toggleRange()}> <FontAwesomeIcon icon={faShuffle} /> </Button>
       </Col>
       <Col md={3} className="device-field-label"> Timing Budget </Col>
       <Col md={3}>
-        { budget_ms }ms &nbsp;
+        { budget } &nbsp;
         <Button size="sm" onClick={() => changeTimingBudget()}> <FontAwesomeIcon icon={faPencil} /> </Button>
       </Col>
     </Row>

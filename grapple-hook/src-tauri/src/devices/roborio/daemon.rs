@@ -1,6 +1,7 @@
-use std::{sync::{atomic::{AtomicBool, AtomicU8}, Arc}, time::{Duration, SystemTime, UNIX_EPOCH, Instant}, collections::HashMap};
+use std::{sync::{atomic::AtomicBool, Arc}, time::Duration, collections::HashMap, borrow::Cow};
 
-use grapple_frc_msgs::{Message, binmarshal::{BinMarshal, BitView, LengthTaggedVec}, grapple::{fragments::FragmentReassembler, GrappleDeviceMessage, GrappleMessageId, TaggedGrappleMessage}, ManufacturerMessage, bridge::BridgedCANMessage};
+use bounded_static::ToBoundedStatic;
+use grapple_frc_msgs::{binmarshal::{BitView, Demarshal, LengthTaggedPayload, LengthTaggedPayloadOwned}, grapple::{fragments::FragmentReassembler, TaggedGrappleMessage}, ManufacturerMessage, bridge::BridgedCANMessage};
 use futures_util::{SinkExt, StreamExt};
 use log::{info, warn};
 use rust_embed::RustEmbed;
@@ -21,7 +22,7 @@ pub struct RoboRioDaemonInner {
 
   stop_signal_tx: mpsc::Sender<()>,
   stop_signal_rx: Mutex<mpsc::Receiver<()>>,
-  can_send_rx: Mutex<mpsc::Receiver<TaggedGrappleMessage>>,
+  can_send_rx: Mutex<mpsc::Receiver<TaggedGrappleMessage<'static>>>,
 }
 
 pub struct RoboRioDaemon {
@@ -49,23 +50,23 @@ impl RoboRioDaemon {
   }
   
   async fn do_loop(mut framed: Framed<TcpStream, GrappleTcpCanBridgeCodec>, inner: Arc<RoboRioDaemonInner>) -> anyhow::Result<()> {
-    static FRAGMENT_ID: AtomicU8 = AtomicU8::new(0);
-
     let mut can_send_rx = inner.can_send_rx.try_lock().map_err(|_| anyhow::anyhow!("This RootDevice is already running!"))?;
     let mut stop_signal_rx = inner.stop_signal_rx.try_lock()?;
 
-    let mut reassemble = FragmentReassembler::new(1000);
+    let (mut reassemble_rx, mut reassemble_tx) = FragmentReassembler::new(1000, 8).split();
     let mut device_manager_interval = tokio::time::interval(Duration::from_millis(500));
 
     loop {
       tokio::select! {
         msg = framed.next() => match msg {
           Some(Ok(msg)) => {
+            let id2 = Into::<grapple_frc_msgs::grapple::GrappleMessageId>::into(msg.id);
             let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.data.0[..]), msg.id);
             match manufacturer_msg {
-              Some(ManufacturerMessage::Grapple(grpl_msg)) => {
-                if let Some(grpl_unfragmented) = reassemble.defragment(msg.timestamp as i64, &msg.id, grpl_msg) {
-                  inner.device_manager.on_message("CAN".to_owned(), msg.id.clone().into(), TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented)).await?;
+              Ok(ManufacturerMessage::Grapple(grpl_msg)) => {
+                let mut storage = Vec::new();
+                if let Ok(Some(grpl_unfragmented)) = reassemble_rx.defragment(msg.timestamp as i64, &msg.id, grpl_msg, &mut storage) {
+                  inner.device_manager.on_message("CAN".to_owned(), msg.id.clone().into(), TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
                 }
               },
               _ => ()
@@ -77,18 +78,16 @@ impl RoboRioDaemon {
         msg = can_send_rx.recv() => match msg {
           Some(msg) => {
             // Need to send something on the CAN bus
-            let frag_id = FRAGMENT_ID.load(std::sync::atomic::Ordering::Relaxed);
             let TaggedGrappleMessage { device_id, msg } = msg;
 
             let mut msgs = vec![];
-            FragmentReassembler::maybe_fragment(device_id, msg, frag_id, &mut |id, buf| {
-              msgs.push(BridgedCANMessage { id, timestamp: 0, data: LengthTaggedVec::new(buf.to_vec()) });
-            });
+            reassemble_tx.maybe_fragment(device_id, msg, &mut |id, buf| {
+              msgs.push(BridgedCANMessage { id, timestamp: 0, data: Cow::<LengthTaggedPayload<u8>>::Owned(LengthTaggedPayloadOwned::new(buf.to_vec())).into() });
+            }).ok();
 
             for msg in msgs {
               framed.send(msg).await?;
             }
-            FRAGMENT_ID.store(frag_id.wrapping_add(1), std::sync::atomic::Ordering::Relaxed);
           },
           None => ()
         },

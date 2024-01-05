@@ -526,6 +526,50 @@
         "SpiderLan"
       ]
     },
+    "LaserCanMeasurement": {
+      "type": "object",
+      "required": [
+        "ambient",
+        "budget",
+        "distance_mm",
+        "mode",
+        "roi",
+        "status"
+      ],
+      "properties": {
+        "ambient": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "budget": {
+          "$ref": "#/definitions/LaserCanTimingBudget"
+        },
+        "distance_mm": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "mode": {
+          "$ref": "#/definitions/LaserCanRangingMode"
+        },
+        "roi": {
+          "$ref": "#/definitions/LaserCanRoi"
+        },
+        "status": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
+    "LaserCanRangingMode": {
+      "type": "string",
+      "enum": [
+        "Short",
+        "Long"
+      ]
+    },
     "LaserCanRequest": {
       "oneOf": [
         {
@@ -556,11 +600,11 @@
             "data": {
               "type": "object",
               "required": [
-                "long"
+                "mode"
               ],
               "properties": {
-                "long": {
-                  "type": "boolean"
+                "mode": {
+                  "$ref": "#/definitions/LaserCanRangingMode"
                 }
               }
             },
@@ -612,9 +656,7 @@
               ],
               "properties": {
                 "budget": {
-                  "type": "integer",
-                  "format": "uint8",
-                  "minimum": 0.0
+                  "$ref": "#/definitions/LaserCanTimingBudget"
                 }
               }
             },
@@ -821,7 +863,7 @@
         "last_update": {
           "anyOf": [
             {
-              "$ref": "#/definitions/LaserCanStatusFrame"
+              "$ref": "#/definitions/LaserCanMeasurement"
             },
             {
               "type": "null"
@@ -830,44 +872,14 @@
         }
       }
     },
-    "LaserCanStatusFrame": {
-      "type": "object",
-      "required": [
-        "ambient",
-        "budget_ms",
-        "distance_mm",
-        "long",
-        "roi",
-        "status"
-      ],
-      "properties": {
-        "ambient": {
-          "type": "integer",
-          "format": "uint16",
-          "minimum": 0.0
-        },
-        "budget_ms": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "distance_mm": {
-          "type": "integer",
-          "format": "uint16",
-          "minimum": 0.0
-        },
-        "long": {
-          "type": "boolean"
-        },
-        "roi": {
-          "$ref": "#/definitions/LaserCanRoi"
-        },
-        "status": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        }
-      }
+    "LaserCanTimingBudget": {
+      "type": "string",
+      "enum": [
+        "TB20ms",
+        "TB33ms",
+        "TB50ms",
+        "TB100ms"
+      ]
     },
     "OldVersionDeviceRequest": {
       "oneOf": [

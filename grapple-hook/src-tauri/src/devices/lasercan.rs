@@ -1,4 +1,4 @@
-use grapple_frc_msgs::{grapple::{Request, errors::{GrappleError, CowStr}, lasercan::{LaserCanStatusFrame, LaserCanMessage, LaserCanRoi}, GrappleDeviceMessage, TaggedGrappleMessage, device_info::GrappleModelId}, DEVICE_ID_BROADCAST, request_factory};
+use grapple_frc_msgs::{grapple::{Request, errors::GrappleError, lasercan::{LaserCanMessage, LaserCanRoi, LaserCanMeasurement, LaserCanRangingMode, LaserCanTimingBudget}, GrappleDeviceMessage, TaggedGrappleMessage, device_info::GrappleModelId}, DEVICE_ID_BROADCAST, request_factory};
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
@@ -7,7 +7,7 @@ use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LaserCanStatus {
-  last_update: Option<LaserCanStatusFrame>
+  last_update: Option<LaserCanMeasurement>
 }
 
 pub struct LaserCan {
@@ -34,7 +34,7 @@ impl LaserCan {
 
 impl VersionGatedDevice for LaserCan {
   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    Self::require_version(version, ">= 2024.0.0, < 2024.1.0")
+    Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
   }
 
   fn firmware_url() -> Option<String> {
@@ -51,15 +51,15 @@ impl RootDevice for LaserCan {
 
 #[async_trait::async_trait]
 impl Device for LaserCan {
-  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+  async fn handle(&self, msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     if msg.device_id == DEVICE_ID_BROADCAST || Some(msg.device_id) == self.info.read().await.device_id {
       match msg.clone().msg {
         GrappleDeviceMessage::Broadcast(bcast) => match bcast {
           _ => ()
         },
         GrappleDeviceMessage::DistanceSensor(sensor) => match sensor {
-          LaserCanMessage::Status(status) => {
-            self.status.write().await.last_update = Some(status);
+          LaserCanMessage::Measurement(measurement) => {
+            self.status.write().await.last_update = Some(measurement);
           },
           _ => ()
         },
@@ -89,17 +89,16 @@ impl LaserCan {
     start_field_upgrade(&self.sender, serial).await
   }
 
-  async fn set_range(&self, long: bool) -> anyhow::Result<()> {
+  async fn set_range(&self, mode: LaserCanRangingMode) -> anyhow::Result<()> {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetRange(data)));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(long)), 500).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(mode)), 2000).await?;
     decode(msg.msg)??;
     Ok(())
   }
 
   async fn set_roi(&self, roi: LaserCanRoi) -> anyhow::Result<()> {
-    // TODO: Validation
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetRoi(data)));
 
@@ -108,7 +107,7 @@ impl LaserCan {
     Ok(())
   }
 
-  async fn set_timing_budget(&self, budget: u8) -> anyhow::Result<()> {
+  async fn set_timing_budget(&self, budget: LaserCanTimingBudget) -> anyhow::Result<()> {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetTimingBudget(data)));
 

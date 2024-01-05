@@ -4,11 +4,12 @@ pub mod provider_manager;
 pub mod roborio;
 pub mod lasercan;
 
-use std::{sync::Arc, time::Duration, collections::{LinkedList, HashMap}, marker::PhantomData};
+use std::{sync::Arc, time::Duration, collections::HashMap, marker::PhantomData, borrow::Cow};
 
-use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, Message, DEVICE_ID_BROADCAST, ManufacturerMessage, binmarshal::{LengthTaggedVec, BinMarshal}, MessageId};
+use bounded_static::IntoBoundedStatic;
+use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, DEVICE_ID_BROADCAST, binmarshal::{MarshalUpdate, AsymmetricCow, Payload}, MessageId};
 use grapple_hook_macros::rpc;
-use log::{info, warn};
+use log::info;
 use semver::{Version, VersionReq};
 use serde::{Serialize, Deserialize};
 use tokio::sync::{mpsc, RwLock, Notify, oneshot};
@@ -19,16 +20,16 @@ use crate::rpc::RpcBase;
 use self::device_manager::RepliesWaiting;
 
 #[derive(Clone)]
-pub struct SendWrapper(mpsc::Sender<TaggedGrappleMessage>, RepliesWaiting);
+pub struct SendWrapper(mpsc::Sender<TaggedGrappleMessage<'static>>, RepliesWaiting);
 
 impl SendWrapper {
-  async fn send(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+  async fn send(&self, msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     msg.msg.validate()?;
     self.0.send(msg).await?;
     Ok(())
   }
 
-  async fn request(&self, mut msg: TaggedGrappleMessage, timeout_ms: usize) -> anyhow::Result<TaggedGrappleMessage> {
+  async fn request(&self, mut msg: TaggedGrappleMessage<'static>, timeout_ms: usize) -> anyhow::Result<TaggedGrappleMessage> {
     let mut id = GrappleMessageId::new(msg.device_id);
     msg.msg.update(&mut id);
 
@@ -45,8 +46,10 @@ impl SendWrapper {
         hm.insert(complement_id_u32, HashMap::new());
       }
       hm.get_mut(&complement_id_u32).unwrap().insert(uuid, tx);
+      drop(hm);
     }
     self.send(msg).await?;
+
 
     match tokio::time::timeout(Duration::from_millis(timeout_ms as u64), rx).await {
       Ok(result) => result.map_err(|e| anyhow::anyhow!(e)),
@@ -90,7 +93,7 @@ impl DeviceInfo {
 
 #[async_trait::async_trait]
 pub trait Device : RpcBase {
-  async fn handle(&self, _msg: TaggedGrappleMessage) -> anyhow::Result<()> { Ok(()) }
+  async fn handle(&self, _msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> { Ok(()) }
 }
 
 #[async_trait::async_trait]
@@ -143,7 +146,7 @@ impl GrappleDevice {
       grapple_frc_msgs::grapple::GrappleDeviceMessage::Broadcast(
         grapple_frc_msgs::grapple::GrappleBroadcastMessage::DeviceInfo(grapple_frc_msgs::grapple::device_info::GrappleDeviceInfo::SetName {
           serial: self.info.read().await.require_serial()?,
-          name
+          name: Cow::<str>::Owned(name).into()
         })
       )
     )).await
@@ -190,7 +193,7 @@ impl<T: FirmwareValidatingDevice> FirmwareUpgradeDevice<T> {
       sender.send(TaggedGrappleMessage::new(
         id,
         GrappleDeviceMessage::FirmwareUpdate(
-          GrappleFirmwareMessage::UpdatePart(c)
+          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(c.as_ref()))).into_static())
         )
       )).await?;
       tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
@@ -249,7 +252,7 @@ impl<T: FirmwareValidatingDevice + Send + Sync> RootDevice for FirmwareUpgradeDe
 
 #[async_trait::async_trait]
 impl<T: FirmwareValidatingDevice + Send + Sync> Device for FirmwareUpgradeDevice<T> {
-  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+  async fn handle(&self, msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     if msg.device_id == DEVICE_ID_BROADCAST || Some(msg.device_id) == self.info.read().await.device_id {
       match msg.clone().msg {
         GrappleDeviceMessage::FirmwareUpdate(fw) => match fw {
@@ -309,7 +312,7 @@ impl OldVersionDevice {
 
 #[async_trait::async_trait]
 impl Device for OldVersionDevice {
-  async fn handle(&self, msg: TaggedGrappleMessage) -> anyhow::Result<()> {
+  async fn handle(&self, msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     self.grapple_device.handle(msg.clone()).await?;
     Ok(())
   }

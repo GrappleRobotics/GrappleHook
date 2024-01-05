@@ -1,4 +1,4 @@
-use grapple_hook_macros::{rpc_provider, rpc};
+use grapple_hook_macros::rpc;
 
 use crate::rpc::RpcBase;
 

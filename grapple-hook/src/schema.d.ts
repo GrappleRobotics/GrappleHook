@@ -32,7 +32,7 @@ export type LaserCanRequest =
     }
   | {
       data: {
-        long: boolean;
+        mode: LaserCanRangingMode;
       };
       method: "set_range";
     }
@@ -44,7 +44,7 @@ export type LaserCanRequest =
     }
   | {
       data: {
-        budget: number;
+        budget: LaserCanTimingBudget;
       };
       method: "set_timing_budget";
     }
@@ -58,6 +58,8 @@ export type LaserCanRequest =
       data: {};
       method: "status";
     };
+export type LaserCanRangingMode = "Short" | "Long";
+export type LaserCanTimingBudget = "TB20ms" | "TB33ms" | "TB50ms" | "TB100ms";
 export type GrappleDeviceRequest =
   | {
       data: {};
@@ -281,13 +283,13 @@ export interface LaserCanRoi {
   y: number;
 }
 export interface LaserCanStatus {
-  last_update?: LaserCanStatusFrame | null;
+  last_update?: LaserCanMeasurement | null;
 }
-export interface LaserCanStatusFrame {
+export interface LaserCanMeasurement {
   ambient: number;
-  budget_ms: number;
+  budget: LaserCanTimingBudget;
   distance_mm: number;
-  long: boolean;
+  mode: LaserCanRangingMode;
   roi: LaserCanRoi;
   status: number;
 }

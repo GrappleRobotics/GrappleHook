@@ -22,7 +22,7 @@ anyhow = "1.0.70"
 ssh2 = "0.9.4"
 tokio-util = { version = "0.7.7", features= ["full"] }
 futures-util = "0.3.28"
-grapple-frc-msgs = "~2024.0.0"
+grapple-frc-msgs = "^2024.2.2"
 async-trait = "0.1.68"
 log = "0.4.17"
 futures = "0.3.28"
@@ -36,6 +36,7 @@ network-interface = "1.0.1"
 grapple-hook-macros = { path = "../grapple-hook-macros" }
 uuid = "1.6.1"
 semver = "1.0.20"
+bounded-static = "0.7.0"
 
 [[bin]]
 name = "grapple-hook"
