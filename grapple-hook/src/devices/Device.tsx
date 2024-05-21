@@ -8,12 +8,16 @@ import { rpc } from "../rpc";
 import { useToasts } from "../toasts";
 import LaserCanComponent from "./LaserCan";
 import OldVersionDevice from "./OldVersionDevice";
+import FlexiCanComponent from "./FlexiCan";
+import MitocandriaComponent from "./Mitocandria";
 
 type FactoryFunc = (info: DeviceInfo, invoke: (msg: any) => Promise<any>) => any;
 const FACTORIES: { [k: string]: FactoryFunc } = {
   "OldVersionDevice": (info, invoke) => <OldVersionDevice info={info} invoke={invoke} />,
   "GrappleFirmwareUpgrade": (info, invoke) => <FirmwareUpdateComponent info={info} invoke={invoke} />,
   "LaserCAN": (info, invoke) => <LaserCanComponent info={info} invoke={invoke} />,
+  "MitoCANdria": (info, invoke) => <MitocandriaComponent info={info} invoke={invoke} />,
+  "FlexiCAN": (info, invoke) => <FlexiCanComponent info={info} invoke={invoke} />
 };
 const getFactory = (device_class: string) => FACTORIES[device_class]
 

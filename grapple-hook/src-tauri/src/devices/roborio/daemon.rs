@@ -61,6 +61,7 @@ impl RoboRioDaemon {
         msg = framed.next() => match msg {
           Some(Ok(msg)) => {
             let id2 = Into::<grapple_frc_msgs::grapple::GrappleMessageId>::into(msg.id);
+            // println!("{:?}", id2);
             let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.data.0[..]), msg.id);
             match manufacturer_msg {
               Ok(ManufacturerMessage::Grapple(grpl_msg)) => {

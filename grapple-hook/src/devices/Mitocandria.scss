@@ -1,0 +1,6 @@
+.powerful-panda-bar {
+  --bs-progress-height: 2em;
+  > * {
+    --bs-progress-bar-transition: width 0.02s ease;
+  }
+}

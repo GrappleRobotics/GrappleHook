@@ -3,6 +3,9 @@ pub mod provider;
 pub mod provider_manager;
 pub mod roborio;
 pub mod lasercan;
+pub mod flexican;
+pub mod mitocandria;
+// pub mod powerful_panda;
 
 use std::{sync::Arc, time::Duration, collections::HashMap, marker::PhantomData, borrow::Cow};
 
@@ -49,7 +52,6 @@ impl SendWrapper {
       drop(hm);
     }
     self.send(msg).await?;
-
 
     match tokio::time::timeout(Duration::from_millis(timeout_ms as u64), rx).await {
       Ok(result) => result.map_err(|e| anyhow::anyhow!(e)),

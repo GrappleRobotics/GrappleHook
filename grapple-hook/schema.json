@@ -5,8 +5,12 @@
   "required": [
     "firmware_req",
     "firmware_rsp",
+    "flexican_req",
+    "flexican_rsp",
     "lasercan_req",
     "lasercan_rsp",
+    "mitocandria_req",
+    "mitocandria_rsp",
     "old_version_req",
     "old_version_rsp",
     "provider_manager_req",
@@ -19,11 +23,23 @@
     "firmware_rsp": {
       "$ref": "#/definitions/FirmwareUpgradeDeviceResponse"
     },
+    "flexican_req": {
+      "$ref": "#/definitions/FlexiCanRequest"
+    },
+    "flexican_rsp": {
+      "$ref": "#/definitions/FlexiCanResponse"
+    },
     "lasercan_req": {
       "$ref": "#/definitions/LaserCanRequest"
     },
     "lasercan_rsp": {
       "$ref": "#/definitions/LaserCanResponse"
+    },
+    "mitocandria_req": {
+      "$ref": "#/definitions/MitocandriaRequest"
+    },
+    "mitocandria_rsp": {
+      "$ref": "#/definitions/MitocandriaResponse"
     },
     "old_version_req": {
       "$ref": "#/definitions/OldVersionDeviceRequest"
@@ -39,6 +55,137 @@
     }
   },
   "definitions": {
+    "AdjustableChannelRequest": {
+      "type": "object",
+      "required": [
+        "channel",
+        "enabled",
+        "voltage"
+      ],
+      "properties": {
+        "channel": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "voltage": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ChannelStatus": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current",
+                "enabled"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Switchable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "NonSwitchable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current",
+                "enabled",
+                "voltage",
+                "voltage_setpoint"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "voltage": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "voltage_setpoint": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Adjustable"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "DeviceId": {
       "oneOf": [
         {
@@ -349,6 +496,133 @@
         }
       ]
     },
+    "FlexiCanRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/GrappleDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "FlexiCanResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FlexiCanStatus"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "FlexiCanStatus": {
+      "type": "object"
+    },
     "GrappleDeviceRequest": {
       "oneOf": [
         {
@@ -523,7 +797,9 @@
       "type": "string",
       "enum": [
         "LaserCan",
-        "SpiderLan"
+        "SpiderLan",
+        "FlexiCAN",
+        "MitoCANdria"
       ]
     },
     "LaserCanMeasurement": {
@@ -881,6 +1157,233 @@
         "TB100ms"
       ]
     },
+    "MitocandriaRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "channel"
+              ],
+              "properties": {
+                "channel": {
+                  "$ref": "#/definitions/SwitchableChannelRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_switchable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "channel"
+              ],
+              "properties": {
+                "channel": {
+                  "$ref": "#/definitions/AdjustableChannelRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_adjustable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "msg"
+              ],
+              "properties": {
+                "msg": {
+                  "$ref": "#/definitions/GrappleDeviceRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "MitocandriaResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "start_field_upgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_switchable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_adjustable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleDeviceResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "grapple"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaStatus"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "MitocandriaStatus": {
+      "type": "object",
+      "properties": {
+        "last_update": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StatusFrame"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "OldVersionDeviceRequest": {
       "oneOf": [
         {
@@ -1201,6 +1704,39 @@
           }
         }
       ]
+    },
+    "StatusFrame": {
+      "type": "object",
+      "required": [
+        "channels"
+      ],
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChannelStatus"
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      }
+    },
+    "SwitchableChannelRequest": {
+      "type": "object",
+      "required": [
+        "channel",
+        "enabled"
+      ],
+      "properties": {
+        "channel": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
     },
     "WrappedDeviceProviderRequest": {
       "oneOf": [

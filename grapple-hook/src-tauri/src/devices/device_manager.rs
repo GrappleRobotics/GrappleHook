@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::str;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use grapple_frc_msgs::grapple::{TaggedGrappleMessage, GrappleMessageId};
@@ -13,7 +14,10 @@ use serde::{Serialize, Deserialize};
 use tokio::sync::{RwLock, mpsc, oneshot};
 use uuid::Uuid;
 
+use super::flexican::FlexiCan;
 use super::lasercan::LaserCan;
+use super::mitocandria::Mitocandria;
+// use super::powerful_panda::PowerfulPanda;
 use super::{DeviceType, DeviceInfo, VersionGatedDevice, RootDevice, FirmwareUpgradeDevice};
 // use super::{DeviceInfo, spiderlan::SpiderLAN};
 use crate::rpc::RpcBase;
@@ -68,32 +72,39 @@ impl DeviceManager {
 
     let now = std::time::Instant::now();
 
-    let mut dev_map = self.devices.write().await;
-    let devices = dev_map.get_mut(domain).unwrap();
+    // try_write since long-running RPC calls (such as those waiting for a response)
+    // will deadlock until the timeout resolves.
+    if let Ok(mut dev_map) = self.devices.try_write() {
+      let devices = dev_map.get_mut(domain).unwrap();
 
-    if !devices.contains_key(&id) {
-      let device_type = info.device_type.clone();
-      let info_arc = Arc::new(RwLock::new(info));
+      if !devices.contains_key(&id) {
+        let device_type = info.device_type.clone();
+        let info_arc = Arc::new(RwLock::new(info));
 
-      let send = super::SendWrapper(self.send.get(domain).unwrap().clone(), self.replies_waiting.get(domain).unwrap().clone());
+        let send = super::SendWrapper(self.send.get(domain).unwrap().clone(), self.replies_waiting.get(domain).unwrap().clone());
 
-      let device = match (&id, device_type) {
-        (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::LaserCan)) => Box::new(FirmwareUpgradeDevice::<LaserCan>::new(send, info_arc.clone())),
-        (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
-        _ => unreachable!()
-      };
+        let device = match (&id, device_type) {
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::LaserCan)) => Box::new(FirmwareUpgradeDevice::<LaserCan>::new(send, info_arc.clone())),
+          (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::FlexiCAN)) => Box::new(FirmwareUpgradeDevice::<FlexiCan>::new(send, info_arc.clone())),
+          (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::FlexiCAN)) => FlexiCan::maybe_gate(send, info_arc.clone(), FlexiCan::new).await,
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::MitoCANdria)) => Box::new(FirmwareUpgradeDevice::<Mitocandria>::new(send, info_arc.clone())),
+          (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::MitoCANdria)) => Mitocandria::maybe_gate(send, info_arc.clone(), Mitocandria::new).await,
+          _ => unreachable!()
+        };
 
-      /* If a device has gone from Serial to DFU, or the reverse, remove the old one so it doesn't linger. */
-      match &id {
-        DeviceId::Dfu(serial) => devices.remove(&DeviceId::Serial(*serial)),
-        DeviceId::Serial(serial) => devices.remove(&DeviceId::Dfu(*serial)),
-      };
+        /* If a device has gone from Serial to DFU, or the reverse, remove the old one so it doesn't linger. */
+        match &id {
+          DeviceId::Dfu(serial) => devices.remove(&DeviceId::Serial(*serial)),
+          DeviceId::Serial(serial) => devices.remove(&DeviceId::Dfu(*serial)),
+        };
 
-      devices.insert(id, DeviceEntry { device, info: info_arc, last_seen: now });
-    } else {
-      let deventry = devices.get_mut(&id).unwrap();
-      *deventry.info.write().await = info;
-      deventry.last_seen = now;
+        devices.insert(id, DeviceEntry { device, info: info_arc, last_seen: now });
+      } else {
+        let deventry = devices.get_mut(&id).unwrap();
+        *deventry.info.write().await = info;
+        deventry.last_seen = now;
+      }
     }
     Ok(())
   }
@@ -158,11 +169,12 @@ impl DeviceManager {
     }
 
     // Check age off
-    let mut dev_map = self.devices.write().await;
-    for (_domain, devices) in dev_map.iter_mut() {
-      devices.retain(|_, device| {
-        device.last_seen.elapsed().as_secs() < 4
-      });
+    if let Ok(mut dev_map) = self.devices.try_write() {
+      for (_domain, devices) in dev_map.iter_mut() {
+        devices.retain(|_, device| {
+          device.last_seen.elapsed().as_secs() < 4
+        });
+      }
     }
 
     Ok(())
@@ -172,13 +184,15 @@ impl DeviceManager {
 #[rpc]
 impl DeviceManager {
   async fn call(&self, domain: Domain, device_id: DeviceId, data: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-    Ok(self.devices.read().await
+    let result = self.devices.read().await
       .get(&domain)
       .unwrap()
       .get(&device_id)
       .ok_or(anyhow::anyhow!("No device with ID {:?}", device_id))?
       .device
-      .rpc_call(data).await?)
+      .rpc_call(data).await;
+
+    Ok(result?)
   }
 
   async fn devices(&self) -> anyhow::Result<HashMap<Domain, Vec<(DeviceId, DeviceInfo, String)>>> {

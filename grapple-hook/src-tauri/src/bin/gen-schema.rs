@@ -1,6 +1,6 @@
 use std::{path::Path, fs, env};
 
-use grapple_hook::devices::{provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, OldVersionDeviceRequest, OldVersionDeviceResponse, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse};
+use grapple_hook::devices::{flexican::{FlexiCanRequest, FlexiCanResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, mitocandria::{MitocandriaRequest, MitocandriaResponse}, provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, OldVersionDeviceRequest, OldVersionDeviceResponse};
 
 #[derive(schemars::JsonSchema)]
 #[allow(unused)]
@@ -16,6 +16,12 @@ struct MegaSchema {
 
   lasercan_req: LaserCanRequest,
   lasercan_rsp: LaserCanResponse,
+
+  flexican_req: FlexiCanRequest,
+  flexican_rsp: FlexiCanResponse,
+
+  mitocandria_req: MitocandriaRequest,
+  mitocandria_rsp: MitocandriaResponse,
 }
 
 fn main() -> anyhow::Result<()> {

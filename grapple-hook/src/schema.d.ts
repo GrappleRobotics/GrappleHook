@@ -25,6 +25,72 @@ export type FirmwareUpgradeDeviceResponse =
       data: number | null;
       method: "progress";
     };
+export type FlexiCanRequest =
+  | {
+      data: {};
+      method: "start_field_upgrade";
+    }
+  | {
+      data: {
+        msg: GrappleDeviceRequest;
+      };
+      method: "grapple";
+    }
+  | {
+      data: {};
+      method: "status";
+    };
+export type GrappleDeviceRequest =
+  | {
+      data: {};
+      method: "blink";
+    }
+  | {
+      data: {
+        id: number;
+      };
+      method: "set_id";
+    }
+  | {
+      data: {
+        name: string;
+      };
+      method: "set_name";
+    }
+  | {
+      data: {};
+      method: "commit_to_eeprom";
+    };
+export type FlexiCanResponse =
+  | {
+      data: null;
+      method: "start_field_upgrade";
+    }
+  | {
+      data: GrappleDeviceResponse;
+      method: "grapple";
+    }
+  | {
+      data: FlexiCanStatus;
+      method: "status";
+    };
+export type GrappleDeviceResponse =
+  | {
+      data: null;
+      method: "blink";
+    }
+  | {
+      data: null;
+      method: "set_id";
+    }
+  | {
+      data: null;
+      method: "set_name";
+    }
+  | {
+      data: null;
+      method: "commit_to_eeprom";
+    };
 export type LaserCanRequest =
   | {
       data: {};
@@ -60,27 +126,6 @@ export type LaserCanRequest =
     };
 export type LaserCanRangingMode = "Short" | "Long";
 export type LaserCanTimingBudget = "TB20ms" | "TB33ms" | "TB50ms" | "TB100ms";
-export type GrappleDeviceRequest =
-  | {
-      data: {};
-      method: "blink";
-    }
-  | {
-      data: {
-        id: number;
-      };
-      method: "set_id";
-    }
-  | {
-      data: {
-        name: string;
-      };
-      method: "set_name";
-    }
-  | {
-      data: {};
-      method: "commit_to_eeprom";
-    };
 export type LaserCanResponse =
   | {
       data: null;
@@ -106,22 +151,76 @@ export type LaserCanResponse =
       data: LaserCanStatus;
       method: "status";
     };
-export type GrappleDeviceResponse =
+export type MitocandriaRequest =
+  | {
+      data: {};
+      method: "start_field_upgrade";
+    }
+  | {
+      data: {
+        channel: SwitchableChannelRequest;
+      };
+      method: "set_switchable_channel";
+    }
+  | {
+      data: {
+        channel: AdjustableChannelRequest;
+      };
+      method: "set_adjustable_channel";
+    }
+  | {
+      data: {
+        msg: GrappleDeviceRequest;
+      };
+      method: "grapple";
+    }
+  | {
+      data: {};
+      method: "status";
+    };
+export type MitocandriaResponse =
   | {
       data: null;
-      method: "blink";
+      method: "start_field_upgrade";
     }
   | {
       data: null;
-      method: "set_id";
+      method: "set_switchable_channel";
     }
   | {
       data: null;
-      method: "set_name";
+      method: "set_adjustable_channel";
     }
   | {
-      data: null;
-      method: "commit_to_eeprom";
+      data: GrappleDeviceResponse;
+      method: "grapple";
+    }
+  | {
+      data: MitocandriaStatus;
+      method: "status";
+    };
+export type ChannelStatus =
+  | {
+      data: {
+        current: number;
+        enabled: boolean;
+      };
+      type: "Switchable";
+    }
+  | {
+      data: {
+        current: number;
+      };
+      type: "NonSwitchable";
+    }
+  | {
+      data: {
+        current: number;
+        enabled: boolean;
+        voltage: number;
+        voltage_setpoint: number;
+      };
+      type: "Adjustable";
     };
 export type OldVersionDeviceRequest =
   | {
@@ -264,18 +363,23 @@ export type DeviceType =
   | {
       Grapple: GrappleModelId;
     };
-export type GrappleModelId = "LaserCan" | "SpiderLan";
+export type GrappleModelId = "LaserCan" | "SpiderLan" | "FlexiCAN" | "MitoCANdria";
 
 export interface MegaSchema {
   firmware_req: FirmwareUpgradeDeviceRequest;
   firmware_rsp: FirmwareUpgradeDeviceResponse;
+  flexican_req: FlexiCanRequest;
+  flexican_rsp: FlexiCanResponse;
   lasercan_req: LaserCanRequest;
   lasercan_rsp: LaserCanResponse;
+  mitocandria_req: MitocandriaRequest;
+  mitocandria_rsp: MitocandriaResponse;
   old_version_req: OldVersionDeviceRequest;
   old_version_rsp: OldVersionDeviceResponse;
   provider_manager_req: ProviderManagerRequest;
   provider_manager_rsp: ProviderManagerResponse;
 }
+export interface FlexiCanStatus {}
 export interface LaserCanRoi {
   h: number;
   w: number;
@@ -292,6 +396,25 @@ export interface LaserCanMeasurement {
   mode: LaserCanRangingMode;
   roi: LaserCanRoi;
   status: number;
+}
+export interface SwitchableChannelRequest {
+  channel: number;
+  enabled: boolean;
+}
+export interface AdjustableChannelRequest {
+  channel: number;
+  enabled: boolean;
+  voltage: number;
+}
+export interface MitocandriaStatus {
+  last_update?: StatusFrame | null;
+}
+export interface StatusFrame {
+  /**
+   * @minItems 5
+   * @maxItems 5
+   */
+  channels: [ChannelStatus, ChannelStatus, ChannelStatus, ChannelStatus, ChannelStatus];
 }
 export interface ProviderInfo {
   address: string;
