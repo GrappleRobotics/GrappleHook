@@ -90,7 +90,7 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
       <Col>
         {
           status?.last_update?.channels?.map((channel, i) => {
-            const current = ((channel.data.current - 1012.0/2) / 4095.0 * 10.0);
+            const current = channel.data.current / 1000.0;
             return <Row className="mb-2">
               <Col>
                 <h4>
