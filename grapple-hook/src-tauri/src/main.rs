@@ -24,7 +24,7 @@ async fn main() {
   tauri::Builder::default()
     .manage(provider_manager.clone())
     .setup(|app| {
-      Ok(())
+       Ok(())
     })
     .invoke_handler(tauri::generate_handler![provider_manager_rpc])
     .run(tauri::generate_context!())

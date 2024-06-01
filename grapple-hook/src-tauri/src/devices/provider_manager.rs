@@ -5,7 +5,7 @@ use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use tokio::sync::RwLock;
 
 
-use super::{provider::{DeviceProvider, ProviderInfo, WrappedDeviceProvider, WrappedDeviceProviderRequest, WrappedDeviceProviderResponse}, roborio::daemon::RoboRioDaemon};
+use super::{generic_usb::GenericUSB, provider::{DeviceProvider, ProviderInfo, WrappedDeviceProvider, WrappedDeviceProviderRequest, WrappedDeviceProviderResponse}, roborio::daemon::RoboRioDaemon};
 use crate::rpc::RpcBase;
 
 pub struct ProviderContainer {
@@ -16,6 +16,7 @@ pub struct ProviderContainer {
 
 pub struct ProviderManager {
   providers: RwLock<HashMap<String, ProviderContainer>>,
+  last_detect: RwLock<std::time::Instant>,
 }
 
 impl ProviderManager {
@@ -29,6 +30,7 @@ impl ProviderManager {
     });
     Self {
       providers: RwLock::new(hm),
+      last_detect: RwLock::new(std::time::Instant::now())
     }
   }
 
@@ -37,14 +39,43 @@ impl ProviderManager {
   }
 
   pub async fn detect_devices(&self) -> anyhow::Result<()> {
-    let mut providers = self.providers.write().await;
+    let mut providers: tokio::sync::RwLockWriteGuard<HashMap<String, ProviderContainer>> = self.providers.write().await;
+
+    // Look for USB devices
+    let now = std::time::Instant::now();
+    if self.last_detect.read().await.elapsed().as_millis() > 500 {
+
+      if let Ok(ports) = tokio_serial::available_ports() {
+        for port in ports {
+          match port.port_type {
+            tokio_serial::SerialPortType::UsbPort(usbi) => {
+              if usbi.vid == 0x16c0 && usbi.pid == 0x27dd {
+                let addr = port.port_name;
+                if !providers.contains_key(&addr) {
+                  providers.insert(addr.clone(), ProviderContainer {
+                    provider: WrappedDeviceProvider::new(Box::new(GenericUSB::new(addr))),
+                    is_autodetect: true,
+                    last_autodetect: now
+                  });
+                } else {
+                  providers.get_mut(&addr).unwrap().last_autodetect = now;
+                }
+              }
+            },
+            _ => ()
+          }
+        }
+      }
+
+      *self.last_detect.write().await = now;
+    }
 
     // Age off old detections
     let mut is_connected = HashMap::new();
     for (k, v) in providers.iter() {
       is_connected.insert(k.clone(), v.provider.info().await?.connected);
     }
-    providers.retain(|k, v| *is_connected.get(k).unwrap() || !v.is_autodetect || v.last_autodetect.elapsed().as_secs() < 1);
+    providers.retain(|k, v| *is_connected.get(k).unwrap() || !v.is_autodetect || v.last_autodetect.elapsed().as_secs() < 2);
     Ok(())
   }
 }
@@ -68,6 +99,8 @@ impl ProviderManager {
   }
 
   async fn providers(&self) -> anyhow::Result<HashMap<String, ProviderInfo>> {
+    self.detect_devices().await.ok();
+
     let mut map = HashMap::new();
     let providers = self.providers.read().await;
     for (address, provider) in providers.iter() {

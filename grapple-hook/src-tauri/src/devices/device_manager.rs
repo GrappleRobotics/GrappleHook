@@ -63,7 +63,6 @@ impl DeviceManager {
     }
   }
   
-  // TODO: if a device is in DFU mode, it should get its own device type. 
   async fn on_enumerate_response(&self, domain: &String, info: DeviceInfo) -> anyhow::Result<()> {
     let id = match info.is_dfu {
       false => DeviceId::Serial(info.serial.unwrap()),

@@ -5,6 +5,7 @@ pub mod roborio;
 pub mod lasercan;
 pub mod flexican;
 pub mod mitocandria;
+pub mod generic_usb;
 // pub mod powerful_panda;
 
 use std::{sync::Arc, time::Duration, collections::HashMap, marker::PhantomData, borrow::Cow};
