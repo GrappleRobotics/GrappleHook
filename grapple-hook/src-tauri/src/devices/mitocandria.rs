@@ -76,7 +76,7 @@ impl Device for Mitocandria {
 
 impl FirmwareValidatingDevice for Mitocandria {
   fn validate_firmware(_info: &super::DeviceInfo, buf: &[u8]) -> anyhow::Result<()> {
-    if &buf[0x200..0x204] == &[0xBEu8, 0xBAu8, 0xFEu8, 0xCAu8] && buf[0x15c] == (GrappleModelId::MitoCANdria as u8) {
+    if &buf[0x200..0x204] == &[0xBEu8, 0xBAu8, 0xFEu8, 0xCAu8] && buf[0x20c] == (GrappleModelId::MitoCANdria as u8) {
       Ok(())
     } else {
       anyhow::bail!("Invalid Firmware File. Are you sure this is the correct firmware?")

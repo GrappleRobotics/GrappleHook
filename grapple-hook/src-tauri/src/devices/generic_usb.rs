@@ -1,8 +1,8 @@
-use std::{collections::HashMap, sync::{atomic::AtomicBool, Arc}, time::Duration};
+use std::{borrow::Cow, collections::HashMap, sync::{atomic::AtomicBool, Arc}, time::Duration};
 
 use bounded_static::ToBoundedStatic;
 use futures::{SinkExt, StreamExt};
-use grapple_frc_msgs::{binmarshal::{BitView, BitWriter, BufferBitWriter, Demarshal, Marshal, MarshalUpdate}, grapple::{fragments::FragmentReassembler, GrappleMessageId, TaggedGrappleMessage}, ManufacturerMessage};
+use grapple_frc_msgs::{binmarshal::{AsymmetricCow, BitView, BitWriter, BufferBitWriter, Demarshal, Marshal, MarshalUpdate}, bridge::BridgedCANMessage, grapple::{fragments::FragmentReassembler, GrappleMessageId, TaggedGrappleMessage}, ManufacturerMessage};
 use log::{info, warn};
 use tokio::sync::{mpsc, Mutex};
 use tokio_serial::{SerialPort, SerialStream, UsbPortInfo};
@@ -59,12 +59,12 @@ impl GenericUSB {
       tokio::select! {
         msg = framed.next() => match msg {
           Some(Ok(msg)) => {
-            let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.1[..]), msg.0);
+            let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.data[..]), msg.id);
             match manufacturer_msg {
               Ok(ManufacturerMessage::Grapple(grpl_msg)) => {
                 let mut storage = Vec::new();
-                if let Ok(Some(grpl_unfragmented)) = reassemble_rx.defragment(0, &msg.0, grpl_msg, &mut storage) {
-                  inner.device_manager.on_message("USB".to_owned(), msg.0.clone().into(), TaggedGrappleMessage::new(msg.0.device_id, grpl_unfragmented.to_static())).await?;
+                if let Ok(Some(grpl_unfragmented)) = reassemble_rx.defragment(0, &msg.id, grpl_msg, &mut storage) {
+                  inner.device_manager.on_message("USB".to_owned(), msg.id.clone().into(), TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
                 }
               },
               _ => ()
@@ -87,7 +87,7 @@ impl GenericUSB {
             ];
 
             for msg in msgs {
-              framed.send(msg).await?;
+              framed.send(BridgedCANMessage { id: msg.0, timestamp: 0, data: AsymmetricCow(Cow::Borrowed((&msg.1[..]).into())) }).await?;
             }
           },
           None => ()
