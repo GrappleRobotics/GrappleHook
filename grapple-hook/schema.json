@@ -55,137 +55,6 @@
     }
   },
   "definitions": {
-    "AdjustableChannelRequest": {
-      "type": "object",
-      "required": [
-        "channel",
-        "enabled",
-        "voltage"
-      ],
-      "properties": {
-        "channel": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "voltage": {
-          "type": "integer",
-          "format": "uint16",
-          "minimum": 0.0
-        }
-      }
-    },
-    "ChannelStatus": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "type"
-          ],
-          "properties": {
-            "data": {
-              "type": "object",
-              "required": [
-                "current",
-                "enabled"
-              ],
-              "properties": {
-                "current": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                },
-                "enabled": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "Switchable"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "type"
-          ],
-          "properties": {
-            "data": {
-              "type": "object",
-              "required": [
-                "current"
-              ],
-              "properties": {
-                "current": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "NonSwitchable"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "data",
-            "type"
-          ],
-          "properties": {
-            "data": {
-              "type": "object",
-              "required": [
-                "current",
-                "enabled",
-                "voltage",
-                "voltage_setpoint"
-              ],
-              "properties": {
-                "current": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                },
-                "enabled": {
-                  "type": "boolean"
-                },
-                "voltage": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                },
-                "voltage_setpoint": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "Adjustable"
-              ]
-            }
-          }
-        }
-      ]
-    },
     "DeviceId": {
       "oneOf": [
         {
@@ -1157,6 +1026,137 @@
         "TB100ms"
       ]
     },
+    "MitocandriaAdjustableChannelRequest": {
+      "type": "object",
+      "required": [
+        "channel",
+        "enabled",
+        "voltage"
+      ],
+      "properties": {
+        "channel": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "voltage": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "MitocandriaChannelStatus": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current",
+                "enabled"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Switchable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "NonSwitchable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "current",
+                "enabled",
+                "voltage",
+                "voltage_setpoint"
+              ],
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "voltage": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "voltage_setpoint": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Adjustable"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "MitocandriaRequest": {
       "oneOf": [
         {
@@ -1191,7 +1191,7 @@
               ],
               "properties": {
                 "channel": {
-                  "$ref": "#/definitions/SwitchableChannelRequest"
+                  "$ref": "#/definitions/MitocandriaSwitchableChannelRequest"
                 }
               }
             },
@@ -1217,7 +1217,7 @@
               ],
               "properties": {
                 "channel": {
-                  "$ref": "#/definitions/AdjustableChannelRequest"
+                  "$ref": "#/definitions/MitocandriaAdjustableChannelRequest"
                 }
               }
             },
@@ -1375,12 +1375,45 @@
         "last_update": {
           "anyOf": [
             {
-              "$ref": "#/definitions/StatusFrame"
+              "$ref": "#/definitions/MitocandriaStatusFrame"
             },
             {
               "type": "null"
             }
           ]
+        }
+      }
+    },
+    "MitocandriaStatusFrame": {
+      "type": "object",
+      "required": [
+        "channels"
+      ],
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MitocandriaChannelStatus"
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      }
+    },
+    "MitocandriaSwitchableChannelRequest": {
+      "type": "object",
+      "required": [
+        "channel",
+        "enabled"
+      ],
+      "properties": {
+        "channel": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "enabled": {
+          "type": "boolean"
         }
       }
     },
@@ -1704,39 +1737,6 @@
           }
         }
       ]
-    },
-    "StatusFrame": {
-      "type": "object",
-      "required": [
-        "channels"
-      ],
-      "properties": {
-        "channels": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ChannelStatus"
-          },
-          "maxItems": 5,
-          "minItems": 5
-        }
-      }
-    },
-    "SwitchableChannelRequest": {
-      "type": "object",
-      "required": [
-        "channel",
-        "enabled"
-      ],
-      "properties": {
-        "channel": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "enabled": {
-          "type": "boolean"
-        }
-      }
     },
     "WrappedDeviceProviderRequest": {
       "oneOf": [

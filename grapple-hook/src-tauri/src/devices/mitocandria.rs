@@ -1,4 +1,4 @@
-use grapple_frc_msgs::{grapple::{device_info::GrappleModelId, errors::GrappleError, mitocandria::{self, AdjustableChannelRequest, SwitchableChannelRequest}, GrappleDeviceMessage, Request, TaggedGrappleMessage}, request_factory, DEVICE_ID_BROADCAST};
+use grapple_frc_msgs::{grapple::{device_info::GrappleModelId, errors::GrappleError, mitocandria::{self, MitocandriaAdjustableChannelRequest, MitocandriaSwitchableChannelRequest}, GrappleDeviceMessage, Request, TaggedGrappleMessage}, request_factory, DEVICE_ID_BROADCAST};
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
@@ -7,7 +7,7 @@ use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MitocandriaStatus {
-  last_update: Option<mitocandria::StatusFrame>
+  last_update: Option<mitocandria::MitocandriaStatusFrame>
 }
 
 pub struct Mitocandria {
@@ -91,10 +91,10 @@ impl Mitocandria {
     start_field_upgrade(&self.sender, serial).await
   }
 
-  async fn set_switchable_channel(&self, channel: SwitchableChannelRequest) -> anyhow::Result<()> {
+  async fn set_switchable_channel(&self, channel: MitocandriaSwitchableChannelRequest) -> anyhow::Result<()> {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::PowerDistributionModule(
-      mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::ChannelRequest::SetSwitchableChannel(data))
+      mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::MitocandriaChannelRequest::SetSwitchableChannel(data))
     ));
 
     let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 2000).await?;
@@ -102,10 +102,10 @@ impl Mitocandria {
     Ok(())
   }
 
-  async fn set_adjustable_channel(&self, channel: AdjustableChannelRequest) -> anyhow::Result<()> {
+  async fn set_adjustable_channel(&self, channel: MitocandriaAdjustableChannelRequest) -> anyhow::Result<()> {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::PowerDistributionModule(
-      mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::ChannelRequest::SetAdjustableChannel(data))
+      mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::MitocandriaChannelRequest::SetAdjustableChannel(data))
     ));
 
     let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 2000).await?;

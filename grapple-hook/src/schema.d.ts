@@ -158,13 +158,13 @@ export type MitocandriaRequest =
     }
   | {
       data: {
-        channel: SwitchableChannelRequest;
+        channel: MitocandriaSwitchableChannelRequest;
       };
       method: "set_switchable_channel";
     }
   | {
       data: {
-        channel: AdjustableChannelRequest;
+        channel: MitocandriaAdjustableChannelRequest;
       };
       method: "set_adjustable_channel";
     }
@@ -199,7 +199,7 @@ export type MitocandriaResponse =
       data: MitocandriaStatus;
       method: "status";
     };
-export type ChannelStatus =
+export type MitocandriaChannelStatus =
   | {
       data: {
         current: number;
@@ -397,24 +397,30 @@ export interface LaserCanMeasurement {
   roi: LaserCanRoi;
   status: number;
 }
-export interface SwitchableChannelRequest {
+export interface MitocandriaSwitchableChannelRequest {
   channel: number;
   enabled: boolean;
 }
-export interface AdjustableChannelRequest {
+export interface MitocandriaAdjustableChannelRequest {
   channel: number;
   enabled: boolean;
   voltage: number;
 }
 export interface MitocandriaStatus {
-  last_update?: StatusFrame | null;
+  last_update?: MitocandriaStatusFrame | null;
 }
-export interface StatusFrame {
+export interface MitocandriaStatusFrame {
   /**
    * @minItems 5
    * @maxItems 5
    */
-  channels: [ChannelStatus, ChannelStatus, ChannelStatus, ChannelStatus, ChannelStatus];
+  channels: [
+    MitocandriaChannelStatus,
+    MitocandriaChannelStatus,
+    MitocandriaChannelStatus,
+    MitocandriaChannelStatus,
+    MitocandriaChannelStatus
+  ];
 }
 export interface ProviderInfo {
   address: string;
