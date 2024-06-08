@@ -49,7 +49,7 @@ impl ProviderManager {
         for port in ports {
           match port.port_type {
             tokio_serial::SerialPortType::UsbPort(usbi) => {
-              if usbi.vid == 0x16c0 && usbi.pid == 0x27dd {
+              if usbi.vid == 0x3580 && usbi.pid == 0x4000 {
                 let addr = port.port_name;
                 if !providers.contains_key(&addr) {
                   providers.insert(addr.clone(), ProviderContainer {
