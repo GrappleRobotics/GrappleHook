@@ -51,11 +51,16 @@ export default function ProviderManagerComponent(props: ProviderManagerProps) {
       rpc<ProviderManagerRequest, ProviderManagerResponse, "providers">(invoke, "providers", {})
         .then((providers) => {
           setProviders(providers);
-          for (let provider of Object.keys(providers)) {
-            rpc<DeviceManagerRequest, DeviceManagerResponse, "devices">(device_manager_rpc(providers[provider].address), "devices", {})
-              .then(ds => setDevices(update(devices, { [provider]: { $set: ds } })))
-              .catch(addError)
-          }
+          let futs = Promise.all(Object.keys(providers).map(provider => rpc<DeviceManagerRequest, DeviceManagerResponse, "devices">(device_manager_rpc(providers[provider].address), "devices", {}).catch(addError)));
+          futs.then(vals => {
+            let devs = update(devices, {});
+            vals.forEach((v, i) => {
+              if (v) {
+                devs = update(devs, { [Object.keys(providers)[i]]: { $set: v } });
+              }
+            });
+            setDevices(devs);
+          });
         })
         .catch(addError)
     }, 500);

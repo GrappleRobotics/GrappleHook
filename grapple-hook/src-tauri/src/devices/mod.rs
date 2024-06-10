@@ -176,34 +176,33 @@ pub struct FirmwareUpgradeDevice<T: FirmwareValidatingDevice> {
   info: SharedInfo,
   progress: Arc<RwLock<Option<f64>>>,
   ack: Arc<Notify>,
+  chunk_size: usize,
   _t: PhantomData<T>
 }
 
 impl<T: FirmwareValidatingDevice> FirmwareUpgradeDevice<T> {
-  pub fn new(sender: SendWrapper, info: SharedInfo) -> Self {
-    Self { sender, info, progress: Arc::new(RwLock::new(None)), ack: Arc::new(Notify::new()), _t: PhantomData }
+  pub fn new(sender: SendWrapper, info: SharedInfo, chunk_size: usize) -> Self {
+    Self { sender, info, progress: Arc::new(RwLock::new(None)), ack: Arc::new(Notify::new()), chunk_size, _t: PhantomData }
   }
 
-  pub async fn field_upgrade_worker(sender: SendWrapper, id: u8, data: &[u8], progress: Arc<RwLock<Option<f64>>>, ack: Arc<Notify>) -> anyhow::Result<()> {
+  pub async fn field_upgrade_worker(sender: SendWrapper, id: u8, data: &[u8], progress: Arc<RwLock<Option<f64>>>, ack: Arc<Notify>, chunk_size: usize) -> anyhow::Result<()> {
     *progress.write().await = Some(0.0);
-    let chunks = data.chunks(8);
+    let chunks = data.chunks(chunk_size);
     let nchunks = chunks.len();
     for (i, chunk) in chunks.enumerate() {
-      info!("Chunk {}", i);
-      let mut c = [0u8; 8];
-      c[0..chunk.len()].copy_from_slice(chunk);
+      info!("Chunk {} (len: {})", i, chunk.len());
 
       sender.send(TaggedGrappleMessage::new(
         id,
         GrappleDeviceMessage::FirmwareUpdate(
-          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(c.as_ref()))).into_static())
+          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(chunk))).into_static())
         )
       )).await?;
       tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
       *progress.write().await = Some((i + 1) as f64 / (nchunks as f64) * 100.0);
     }
 
-    *progress.write().await = Some(100.0);
+    *progress.write().await = Some(100.0); 
     sender.send(TaggedGrappleMessage::new(
       id,
       GrappleDeviceMessage::FirmwareUpdate(
@@ -234,10 +233,11 @@ impl<T: FirmwareValidatingDevice + Send + Sync> FirmwareUpgradeDevice<T> {
     let progress = self.progress.clone();
     let id = self.info.read().await.require_device_id()?;
     let notify = self.ack.clone();
+    let chunk_size = self.chunk_size;
 
     tokio::task::spawn(async move {
       let data = data;
-      Self::field_upgrade_worker(sender, id, &data[..], progress, notify).await.ok();
+      Self::field_upgrade_worker(sender, id, &data[..], progress, notify, chunk_size).await.ok();
     });
     Ok(())
   }

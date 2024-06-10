@@ -83,11 +83,11 @@ impl DeviceManager {
         let send = super::SendWrapper(self.send.get(domain).unwrap().clone(), self.replies_waiting.get(domain).unwrap().clone());
 
         let device = match (&id, device_type) {
-          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::LaserCan)) => Box::new(FirmwareUpgradeDevice::<LaserCan>::new(send, info_arc.clone())),
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::LaserCan)) => Box::new(FirmwareUpgradeDevice::<LaserCan>::new(send, info_arc.clone(), 8)),
           (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::LaserCan)) => LaserCan::maybe_gate(send, info_arc.clone(), LaserCan::new).await,
-          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::FlexiCAN)) => Box::new(FirmwareUpgradeDevice::<FlexiCan>::new(send, info_arc.clone())),
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::FlexiCAN)) => Box::new(FirmwareUpgradeDevice::<FlexiCan>::new(send, info_arc.clone(), 64)),
           (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::FlexiCAN)) => FlexiCan::maybe_gate(send, info_arc.clone(), FlexiCan::new).await,
-          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::MitoCANdria)) => Box::new(FirmwareUpgradeDevice::<Mitocandria>::new(send, info_arc.clone())),
+          (DeviceId::Dfu(..),     DeviceType::Grapple(GrappleModelId::MitoCANdria)) => Box::new(FirmwareUpgradeDevice::<Mitocandria>::new(send, info_arc.clone(), 64)),
           (DeviceId::Serial(..),  DeviceType::Grapple(GrappleModelId::MitoCANdria)) => Mitocandria::maybe_gate(send, info_arc.clone(), Mitocandria::new).await,
           _ => unreachable!()
         };
