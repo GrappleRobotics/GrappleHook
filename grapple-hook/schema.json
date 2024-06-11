@@ -1030,7 +1030,6 @@
       "type": "object",
       "required": [
         "channel",
-        "enabled",
         "voltage"
       ],
       "properties": {
@@ -1038,9 +1037,6 @@
           "type": "integer",
           "format": "uint8",
           "minimum": 0.0
-        },
-        "enabled": {
-          "type": "boolean"
         },
         "voltage": {
           "type": "integer",

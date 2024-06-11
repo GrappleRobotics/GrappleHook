@@ -403,7 +403,6 @@ export interface MitocandriaSwitchableChannelRequest {
 }
 export interface MitocandriaAdjustableChannelRequest {
   channel: number;
-  enabled: boolean;
   voltage: number;
 }
 export interface MitocandriaStatus {

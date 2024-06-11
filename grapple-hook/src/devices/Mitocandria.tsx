@@ -68,7 +68,6 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
         {
           channel: {
             channel: channel,
-            enabled: false,
             voltage: n * 1000.0
           }
         }
