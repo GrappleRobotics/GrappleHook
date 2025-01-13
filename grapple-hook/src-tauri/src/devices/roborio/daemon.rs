@@ -3,10 +3,13 @@ use std::{sync::{atomic::AtomicBool, Arc}, time::Duration, collections::HashMap,
 use bounded_static::ToBoundedStatic;
 use grapple_frc_msgs::{binmarshal::{BitView, Demarshal, LengthTaggedPayload, LengthTaggedPayloadOwned}, grapple::{fragments::FragmentReassembler, TaggedGrappleMessage}, ManufacturerMessage, bridge::BridgedCANMessage};
 use futures_util::{SinkExt, StreamExt};
+use grapple_hook_macros::rpc;
 use log::{info, warn};
 use rust_embed::RustEmbed;
 use tokio::{sync::{mpsc, Mutex}, net::TcpStream};
 use tokio_util::codec::Framed;
+
+use crate::rpc::RpcBase;
 
 use crate::{devices::{device_manager::{DeviceManager, DeviceManagerRequest, DeviceManagerResponse}, provider::{DeviceProvider, ProviderInfo}}, codecs::tcp_can_bridge::GrappleTcpCanBridgeCodec, ssh::SSHSession};
 
@@ -23,6 +26,9 @@ pub struct RoboRioDaemonInner {
   stop_signal_tx: mpsc::Sender<()>,
   stop_signal_rx: Mutex<mpsc::Receiver<()>>,
   can_send_rx: Mutex<mpsc::Receiver<TaggedGrappleMessage<'static>>>,
+
+  do_deploy: AtomicBool,
+  address: Mutex<String>,
 }
 
 pub struct RoboRioDaemon {
@@ -44,6 +50,8 @@ impl RoboRioDaemon {
           device_manager: DeviceManager::new(sends),
           stop_signal_tx, stop_signal_rx: Mutex::new(stop_signal_rx),
           can_send_rx: Mutex::new(can_send_rx),
+          do_deploy: AtomicBool::new(true),
+          address: Mutex::new(ROBORIO_ADDRESS.to_owned())
         }
       )
     }
@@ -107,9 +115,9 @@ impl RoboRioDaemon {
     Ok(())
   }
 
-  async fn deploy() -> anyhow::Result<()> {
+  async fn deploy(addr: String) -> anyhow::Result<()> {
     info!("Deploy...");
-    let session = SSHSession::connect(&(ROBORIO_ADDRESS.to_owned() + ":22"), "admin", "").await?;
+    let session = SSHSession::connect(&(addr + ":22"), "admin", "").await?;
 
     let file = Daemon::get("grappleHookRoboRioDaemon").ok_or(anyhow::anyhow!("Embedded File Error"))?;
     session.copy(file.data.to_vec(), "/tmp/grapple-hook-daemon").await?;
@@ -123,9 +131,9 @@ impl RoboRioDaemon {
     Ok(())
   }
 
-  pub async fn revert_to_robot_code() -> anyhow::Result<()> {
+  pub async fn revert_to_robot_code(addr: String) -> anyhow::Result<()> {
     info!("Reverting to user code...");
-    let session = SSHSession::connect("172.22.11.2:22", "admin", "").await?;
+    let session = SSHSession::connect(&(addr + ":22"), "admin", "").await?;
     session.run("killall grapple-hook-daemon; frcKillRobot.sh -t -r").await.ok();
     info!("Reverted to user code!");
     Ok(())
@@ -134,7 +142,12 @@ impl RoboRioDaemon {
   async fn do_start(inner: Arc<RoboRioDaemonInner>) -> anyhow::Result<()> {
     info!("Connecting...");
 
-    Self::deploy().await?;
+    let will_deploy = inner.do_deploy.load(std::sync::atomic::Ordering::Relaxed);
+    let addr = inner.address.lock().await.clone();
+
+    if will_deploy {
+      Self::deploy(addr.clone()).await?;
+    }
 
     let stream = tokio::time::timeout(Duration::from_millis(3000), TcpStream::connect(ROBORIO_ADDRESS.to_owned() + ":8006")).await.map_err(|_| anyhow::anyhow!("Connection Timed Out!"))??;
     let framed = Framed::new(stream, GrappleTcpCanBridgeCodec);
@@ -145,7 +158,9 @@ impl RoboRioDaemon {
       inner.running.store(true, std::sync::atomic::Ordering::Relaxed);
       let r = Self::do_loop(framed, inner.clone()).await;
       inner.running.store(false, std::sync::atomic::Ordering::Relaxed);
-      tokio::time::timeout(tokio::time::Duration::from_secs(10), Self::revert_to_robot_code()).await.ok();
+      if will_deploy {
+        tokio::time::timeout(tokio::time::Duration::from_secs(10), Self::revert_to_robot_code(addr.clone())).await.ok();
+      }
       inner.device_manager.reset().await;
       match r {
         Ok(_) => info!("RoboRioDaemon runner stopped gracefully"),
@@ -170,13 +185,41 @@ impl DeviceProvider for RoboRioDaemon {
 
   async fn info(&self) -> anyhow::Result<ProviderInfo> {
     Ok(ProviderInfo {
-      description: "RoboRIO".to_owned(),
-      address: ROBORIO_ADDRESS.to_owned(),
+      ty: "RoboRIO".to_owned(),
+      description: format!("RoboRIO"),
+      address: self.inner.address.lock().await.clone(),
       connected: self.inner.running.load(std::sync::atomic::Ordering::Relaxed)
     })
   }
 
   async fn device_manager_call(&self, req: DeviceManagerRequest) -> anyhow::Result<DeviceManagerResponse> {
     self.inner.device_manager.rpc_process(req).await
+  }
+
+  async fn call(&self, req: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    self.rpc_call(req).await
+  }
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct RoboRIOStatus {
+  pub using_daemon: bool
+}
+
+#[rpc]
+impl RoboRioDaemon {
+  async fn status(&self) -> anyhow::Result<RoboRIOStatus> {
+    Ok(RoboRIOStatus { using_daemon: self.inner.do_deploy.load(std::sync::atomic::Ordering::Relaxed) })
+  }
+
+  async fn set_use_daemon(&self, use_daemon: bool) -> anyhow::Result<()> {
+    self.inner.do_deploy.store(use_daemon, std::sync::atomic::Ordering::Relaxed);
+    Ok(())
+  }
+
+  async fn set_address(&self, address: String) -> anyhow::Result<()> {
+    let mut addr = self.inner.address.lock().await;
+    *addr = address;
+    Ok(())
   }
 }

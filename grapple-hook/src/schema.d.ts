@@ -294,6 +294,12 @@ export type WrappedDeviceProviderRequest =
         req: DeviceManagerRequest;
       };
       method: "device_manager_call";
+    }
+  | {
+      data: {
+        req: unknown;
+      };
+      method: "call";
     };
 export type DeviceManagerRequest =
   | {
@@ -346,6 +352,10 @@ export type WrappedDeviceProviderResponse =
   | {
       data: DeviceManagerResponse;
       method: "device_manager_call";
+    }
+  | {
+      data: unknown;
+      method: "call";
     };
 export type DeviceManagerResponse =
   | {
@@ -364,6 +374,36 @@ export type DeviceType =
       Grapple: GrappleModelId;
     };
 export type GrappleModelId = "LaserCan" | "SpiderLan" | "FlexiCAN" | "MitoCANdria";
+export type RoboRioDaemonRequest =
+  | {
+      data: {};
+      method: "status";
+    }
+  | {
+      data: {
+        use_daemon: boolean;
+      };
+      method: "set_use_daemon";
+    }
+  | {
+      data: {
+        address: string;
+      };
+      method: "set_address";
+    };
+export type RoboRioDaemonResponse =
+  | {
+      data: RoboRIOStatus;
+      method: "status";
+    }
+  | {
+      data: null;
+      method: "set_use_daemon";
+    }
+  | {
+      data: null;
+      method: "set_address";
+    };
 
 export interface MegaSchema {
   firmware_req: FirmwareUpgradeDeviceRequest;
@@ -378,6 +418,8 @@ export interface MegaSchema {
   old_version_rsp: OldVersionDeviceResponse;
   provider_manager_req: ProviderManagerRequest;
   provider_manager_rsp: ProviderManagerResponse;
+  roborio_req: RoboRioDaemonRequest;
+  roborio_rsp: RoboRioDaemonResponse;
 }
 export interface FlexiCanStatus {}
 export interface LaserCanRoi {
@@ -425,6 +467,7 @@ export interface ProviderInfo {
   address: string;
   connected: boolean;
   description: string;
+  ty: string;
 }
 export interface DeviceInfo {
   device_id?: number | null;
@@ -434,4 +477,7 @@ export interface DeviceInfo {
   is_dfu_in_progress: boolean;
   name?: string | null;
   serial?: number | null;
+}
+export interface RoboRIOStatus {
+  using_daemon: boolean;
 }

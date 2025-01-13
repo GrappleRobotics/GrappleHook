@@ -6,6 +6,7 @@ use super::device_manager::{DeviceManagerRequest, DeviceManagerResponse};
 
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ProviderInfo {
+  pub ty: String,
   pub description: String,
   pub address: String,
   pub connected: bool,
@@ -17,6 +18,7 @@ pub trait DeviceProvider {
   async fn disconnect(&self) -> anyhow::Result<()>;
   async fn info(&self) -> anyhow::Result<ProviderInfo>;
 
+  async fn call(&self, req: serde_json::Value) -> anyhow::Result<serde_json::Value>;
   async fn device_manager_call(&self, req: DeviceManagerRequest) -> anyhow::Result<DeviceManagerResponse>;
 }
 
@@ -46,5 +48,9 @@ impl WrappedDeviceProvider {
 
   pub async fn device_manager_call(&self, req: DeviceManagerRequest) -> anyhow::Result<DeviceManagerResponse> {
     self.inner.device_manager_call(req).await
+  }
+
+  async fn call(&self, req: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    self.inner.call(req).await
   }
 }

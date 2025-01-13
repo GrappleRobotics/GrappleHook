@@ -14,7 +14,9 @@
     "old_version_req",
     "old_version_rsp",
     "provider_manager_req",
-    "provider_manager_rsp"
+    "provider_manager_rsp",
+    "roborio_req",
+    "roborio_rsp"
   ],
   "properties": {
     "firmware_req": {
@@ -52,6 +54,12 @@
     },
     "provider_manager_rsp": {
       "$ref": "#/definitions/ProviderManagerResponse"
+    },
+    "roborio_req": {
+      "$ref": "#/definitions/RoboRioDaemonRequest"
+    },
+    "roborio_rsp": {
+      "$ref": "#/definitions/RoboRioDaemonResponse"
     }
   },
   "definitions": {
@@ -1581,7 +1589,8 @@
       "required": [
         "address",
         "connected",
-        "description"
+        "description",
+        "ty"
       ],
       "properties": {
         "address": {
@@ -1591,6 +1600,9 @@
           "type": "boolean"
         },
         "description": {
+          "type": "string"
+        },
+        "ty": {
           "type": "string"
         }
       }
@@ -1734,6 +1746,149 @@
         }
       ]
     },
+    "RoboRIOStatus": {
+      "type": "object",
+      "required": [
+        "using_daemon"
+      ],
+      "properties": {
+        "using_daemon": {
+          "type": "boolean"
+        }
+      }
+    },
+    "RoboRioDaemonRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "use_daemon"
+              ],
+              "properties": {
+                "use_daemon": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_use_daemon"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "address"
+              ],
+              "properties": {
+                "address": {
+                  "type": "string"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_address"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "RoboRioDaemonResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/RoboRIOStatus"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_use_daemon"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_address"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "WrappedDeviceProviderRequest": {
       "oneOf": [
         {
@@ -1815,6 +1970,30 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "req"
+              ],
+              "properties": {
+                "req": true
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1888,6 +2067,22 @@
               "type": "string",
               "enum": [
                 "device_manager_call"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": true,
+            "method": {
+              "type": "string",
+              "enum": [
+                "call"
               ]
             }
           }

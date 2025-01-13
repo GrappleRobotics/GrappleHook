@@ -6,6 +6,13 @@ import { faBinoculars, faTriangleExclamation } from "@fortawesome/free-solid-svg
 import { ProviderInfo, WrappedDeviceProviderRequest, WrappedDeviceProviderResponse } from "../schema";
 import { useToasts } from "../toasts";
 import { rpc } from "../rpc";
+import RoboRIO from "./RoboRIO";
+
+type FactoryFunc = (info: ProviderInfo, invoke: (msg: any) => Promise<any>) => any;
+const FACTORIES: { [k: string]: FactoryFunc } = {
+  "RoboRIO": (info, invoke) => <RoboRIO info={info} invoke={invoke} />,
+};
+const getFactory = (ty: string) => FACTORIES[ty]
 
 type ProviderProps = {
   info: ProviderInfo,
@@ -15,6 +22,8 @@ type ProviderProps = {
 export default function ProviderComponent(props: ProviderProps) {
   const { info, invoke } = props;
   const { addError } = useToasts();
+
+  let factory = getFactory(props.info.ty);
 
   return <React.Fragment>
     <Row className="mb-1">
@@ -43,6 +52,11 @@ export default function ProviderComponent(props: ProviderProps) {
             <p> To get started, hit the <span className="text-success">Connect</span> button above! </p>
           </Alert>
         }
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        { factory !== undefined ? factory(info, msg => rpc<WrappedDeviceProviderRequest, WrappedDeviceProviderResponse, "call">(invoke, "call", { req: msg })) : <React.Fragment /> }
       </Col>
     </Row>
   </React.Fragment>

@@ -4,6 +4,7 @@ use bounded_static::ToBoundedStatic;
 use futures::{SinkExt, StreamExt};
 use grapple_frc_msgs::{binmarshal::{AsymmetricCow, BitView, BitWriter, BufferBitWriter, Demarshal, Marshal, MarshalUpdate}, bridge::BridgedCANMessage, grapple::{fragments::FragmentReassembler, GrappleMessageId, TaggedGrappleMessage}, ManufacturerMessage};
 use log::{info, warn};
+use serde_json::json;
 use tokio::sync::{mpsc, Mutex};
 use tokio_serial::{SerialPort, SerialStream, UsbPortInfo};
 use tokio_util::codec::Framed;
@@ -149,10 +150,15 @@ impl DeviceProvider for GenericUSB {
 
   async fn info(&self) -> anyhow::Result<ProviderInfo> {
     Ok(ProviderInfo {
+      ty: "Generic-USB".to_owned(),
       description: "Grapple USB Device".to_owned(),
       address: self.inner.address.clone(),
       connected: self.inner.running.load(std::sync::atomic::Ordering::Relaxed)
     })
+  }
+
+  async fn call(&self, _req: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    Ok(json!({}))
   }
 
   async fn device_manager_call(&self, req: DeviceManagerRequest) -> anyhow::Result<DeviceManagerResponse> {
