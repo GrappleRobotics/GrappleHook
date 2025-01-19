@@ -57,7 +57,7 @@ model {
             deployArtifact.component = it
             // wpi.cpp.deps.wpilibStatic(it)
             wpi.cpp.vendor.cpp(it)
-            wpi.cpp.deps.useLibrary(it, "wpilibc_static", "hal_static", "wpiutil_static", "ni_link_libraries", "ni_runtime_libraries")
+            wpi.cpp.deps.wpilib(it)
         }
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "grapple-hook"
-version = "25.0.1"
+version = "25.0.2"
 description = "Configuration Tool for Grapple Hardware"
 authors = ["Jaci Brunning <jaci.brunning@gmail.com>"]
 license = "GPLv3"
