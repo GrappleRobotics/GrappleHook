@@ -33,13 +33,8 @@ impl SendWrapper {
     Ok(())
   }
 
-  async fn request(&self, mut msg: TaggedGrappleMessage<'static>, timeout_ms: usize) -> anyhow::Result<TaggedGrappleMessage> {
-    let mut id = GrappleMessageId::new(msg.device_id);
-    msg.msg.update(&mut id);
-
-    let mut complement_id = id.clone();
-    complement_id.ack_flag = true;
-    let complement_id_u32: u32 = Into::<MessageId>::into(complement_id).into();
+  async fn request_inner(&self, msg: TaggedGrappleMessage<'static>, reply_id: GrappleMessageId, timeout_ms: usize) -> anyhow::Result<TaggedGrappleMessage> {
+    let complement_id_u32: u32 = Into::<MessageId>::into(reply_id).into();
 
     let uuid = Uuid::new_v4();
 
@@ -62,6 +57,20 @@ impl SendWrapper {
         hm.get_mut(&complement_id_u32).map(|x| x.remove(&uuid));
         anyhow::bail!("Timed out waiting for response")
       },
+    }
+  }
+
+  async fn request(&self, mut msg: TaggedGrappleMessage<'static>, timeout_ms: usize, retry: usize) -> anyhow::Result<TaggedGrappleMessage> {
+    let mut id = GrappleMessageId::new(msg.device_id);
+    msg.msg.update(&mut id);
+
+    let mut complement_id = id.clone();
+    complement_id.ack_flag = true;
+    
+    match self.request_inner(msg.clone(), complement_id, timeout_ms).await {
+      Ok(x) => Ok(x),
+      Err(_) if retry >= 1 => Box::pin(self.request(msg, timeout_ms, retry - 1)).await,
+      Err(e) => Err(e)
     }
   }
 }

@@ -87,7 +87,7 @@ export default function RoboRIO(props: RoboRIOProps) {
           <br />
 
           In your Robot Code, merge in the following changes, redeploy, and then try and connect again. <br />
-          <strong>Make sure <span className="text-primary">libgrapplefrc</span> is up to date! (at least 2025.0.2)</strong> <br /> <br />
+          <strong>Make sure <span className="text-primary">libgrapplefrc</span> is up to date! (at least 2025.0.5)</strong> <br /> <br />
 
           <Tabs id="lang-examples" defaultActiveKey="java">
             <Tab eventKey="java" title="JAVA">

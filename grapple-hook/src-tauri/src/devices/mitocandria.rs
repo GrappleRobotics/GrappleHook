@@ -97,7 +97,7 @@ impl Mitocandria {
       mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::MitocandriaChannelRequest::SetSwitchableChannel(data))
     ));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 2000).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }
@@ -108,7 +108,7 @@ impl Mitocandria {
       mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::MitocandriaChannelRequest::SetAdjustableChannel(data))
     ));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 2000).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }

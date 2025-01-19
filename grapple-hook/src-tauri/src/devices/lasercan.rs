@@ -93,7 +93,7 @@ impl LaserCan {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetRange(data)));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(mode)), 2000).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(mode)), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }
@@ -102,7 +102,7 @@ impl LaserCan {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetRoi(data)));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(roi)), 500).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(roi)), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }
@@ -111,7 +111,7 @@ impl LaserCan {
     let id = self.info.read().await.require_device_id()?;
     let (encode, decode) = request_factory!(data, GrappleDeviceMessage::DistanceSensor(LaserCanMessage::SetTimingBudget(data)));
 
-    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(budget)), 500).await?;
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(budget)), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }
