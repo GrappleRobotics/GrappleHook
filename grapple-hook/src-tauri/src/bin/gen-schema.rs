@@ -1,6 +1,6 @@
 use std::{path::Path, fs, env};
 
-use grapple_hook::devices::{flexican::{FlexiCanRequest, FlexiCanResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, mitocandria::{MitocandriaRequest, MitocandriaResponse}, provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, roborio::daemon::{RoboRioDaemonRequest, RoboRioDaemonResponse}, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, OldVersionDeviceRequest, OldVersionDeviceResponse};
+use grapple_hook::{devices::{flexican::{FlexiCanRequest, FlexiCanResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, mitocandria::{MitocandriaRequest, MitocandriaResponse}, provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, roborio::daemon::{RoboRioDaemonRequest, RoboRioDaemonResponse}, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, OldVersionDeviceRequest, OldVersionDeviceResponse}, updates::LightReleaseResponse};
 
 #[derive(schemars::JsonSchema)]
 #[allow(unused)]
@@ -25,6 +25,8 @@ struct MegaSchema {
 
   roborio_req: RoboRioDaemonRequest,
   roborio_rsp: RoboRioDaemonResponse,
+
+  light_release_response: LightReleaseResponse,
 }
 
 fn main() -> anyhow::Result<()> {

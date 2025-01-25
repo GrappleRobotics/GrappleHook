@@ -34,13 +34,11 @@ impl Mitocandria {
 
 impl VersionGatedDevice for Mitocandria {
   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    // Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
-    Ok(())
+    Self::require_version(version, ">= 2024.0.0, < 2024.1.0")
   }
 
   fn firmware_url() -> Option<String> {
-    // Some("https://github.com/GrappleRobotics/LaserCAN/releases".to_owned())
-    None
+    Some("https://github.com/GrappleRobotics/Binaries/releases".to_owned())
   }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "grapple-hook"
-version = "25.0.2"
+version = "25.0.3"
 description = "Configuration Tool for Grapple Hardware"
 authors = ["Jaci Brunning <jaci.brunning@gmail.com>"]
 license = "GPLv3"
@@ -37,6 +37,8 @@ grapple-hook-macros = { path = "../grapple-hook-macros" }
 uuid = "1.6.1"
 semver = "1.0.20"
 bounded-static = "0.7.0"
+reqwest = { version = "0.12.12", features = ["json"] }
+chrono = "0.4.39"
 
 [[bin]]
 name = "grapple-hook"

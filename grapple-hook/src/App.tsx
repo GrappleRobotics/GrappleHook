@@ -1,12 +1,12 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import { listen, Event } from "@tauri-apps/api/event";
-import React from "react";
+import { listen, Event, EventCallback } from "@tauri-apps/api/event";
+import React, { useEffect } from "react";
 import { Alert, Button, Col, Form, InputGroup, Nav, Row, Tab, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfo, faInfoCircle, faTriangleExclamation, faUpload } from "@fortawesome/free-solid-svg-icons";
 import Bug from "./Bug";
 import ProviderManagerComponent from "./providers/ProviderManager";
-import { ProviderManagerRequest, ProviderManagerResponse } from "./schema";
+import { LightReleaseResponse, ProviderManagerRequest, ProviderManagerResponse } from "./schema";
 import ToastProvider, { useToasts } from "./toasts";
 
 export default class App extends React.Component<{}> {
@@ -26,7 +26,19 @@ const our_invoke = async (msg: ProviderManagerRequest): Promise<ProviderManagerR
 }
 
 export function AppInner() {
-  const { toasts, removeToast } = useToasts();
+  const { toasts, addInfo, removeToast } = useToasts();
+
+  useEffect(() => {
+    const interval = setTimeout(() => {
+      invoke("is_update_available").then((update) => {
+        const release = update as LightReleaseResponse;
+        addInfo(<span>
+          Please update to <a target="_blank" href={release.html_url}>{ release.tag_name }</a>
+        </span>, "Update Available");
+      }).catch(e => {});
+    }, 1000);
+    return () => clearTimeout(interval)
+  }, []);
 
   return <div className="container">
     <img src="icon.png" height={30} style={{ marginRight: "20px" }} />

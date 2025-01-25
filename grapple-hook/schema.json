@@ -9,6 +9,7 @@
     "flexican_rsp",
     "lasercan_req",
     "lasercan_rsp",
+    "light_release_response",
     "mitocandria_req",
     "mitocandria_rsp",
     "old_version_req",
@@ -36,6 +37,9 @@
     },
     "lasercan_rsp": {
       "$ref": "#/definitions/LaserCanResponse"
+    },
+    "light_release_response": {
+      "$ref": "#/definitions/LightReleaseResponse"
     },
     "mitocandria_req": {
       "$ref": "#/definitions/MitocandriaRequest"
@@ -1033,6 +1037,29 @@
         "TB50ms",
         "TB100ms"
       ]
+    },
+    "LightReleaseResponse": {
+      "type": "object",
+      "required": [
+        "html_url",
+        "name",
+        "published_at",
+        "tag_name"
+      ],
+      "properties": {
+        "html_url": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "published_at": {
+          "type": "string"
+        },
+        "tag_name": {
+          "type": "string"
+        }
+      }
     },
     "MitocandriaAdjustableChannelRequest": {
       "type": "object",

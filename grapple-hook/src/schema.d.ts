@@ -412,6 +412,7 @@ export interface MegaSchema {
   flexican_rsp: FlexiCanResponse;
   lasercan_req: LaserCanRequest;
   lasercan_rsp: LaserCanResponse;
+  light_release_response: LightReleaseResponse;
   mitocandria_req: MitocandriaRequest;
   mitocandria_rsp: MitocandriaResponse;
   old_version_req: OldVersionDeviceRequest;
@@ -438,6 +439,12 @@ export interface LaserCanMeasurement {
   mode: LaserCanRangingMode;
   roi: LaserCanRoi;
   status: number;
+}
+export interface LightReleaseResponse {
+  html_url: string;
+  name: string;
+  published_at: string;
+  tag_name: string;
 }
 export interface MitocandriaSwitchableChannelRequest {
   channel: number;
