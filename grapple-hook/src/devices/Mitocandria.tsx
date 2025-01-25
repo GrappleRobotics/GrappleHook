@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { DeviceInfo, MitocandriaRequest, MitocandriaResponse, MitocandriaStatus } from "../schema"
+import { DeviceInfo, LightReleaseResponse, MitocandriaRequest, MitocandriaResponse, MitocandriaStatus } from "../schema"
 import { useToasts } from "../toasts"
 import { rpc } from "../rpc"
 import { Button, Col, ProgressBar, Row } from "react-bootstrap"
@@ -28,6 +28,7 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
   const { addError, addWarning } = useToasts();
 
   const [ status, setStatus ] = useState<MitocandriaStatus>();
+  const [ updateDetails, setUpdateDetails ] = useState<LightReleaseResponse | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -35,6 +36,11 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
         .then(setStatus)
         .catch(e => {});  // Discard, it's usually a message to say that the device is disconnected and the UI fragment just hasn't been evicted yet.
     }, 50);
+    
+    rpc<MitocandriaRequest, MitocandriaResponse, "check_for_new_firmware">(invoke, "check_for_new_firmware", {})
+      .then(setUpdateDetails)
+      .catch(e => addError(e))
+
     return () => clearInterval(interval);
   }, []);
 
@@ -82,6 +88,7 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
           info={info}
           invoke={async (msg) => await rpc<MitocandriaRequest, MitocandriaResponse, "grapple">(invoke, "grapple", { msg })}
           start_dfu={async () => await rpc<MitocandriaRequest, MitocandriaResponse, "start_field_upgrade">(invoke, "start_field_upgrade", {})}
+          update_details={updateDetails}
         />
       </Col>
     </Row>

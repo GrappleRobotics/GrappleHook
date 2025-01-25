@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, time::Duration};
 
 // use devices::device_manager::DeviceManager;
 use env_logger::Builder;
@@ -26,13 +26,13 @@ async fn main() {
   Builder::new().filter_level(log::LevelFilter::Info).init();
 
   let provider_manager = Arc::new(ProviderManager::new().await);
-  let most_recent = most_recent_update_available("https://api.github.com/repos/GrappleRobotics/GrappleHook/releases", |_| true).await;
+  let most_recent = tokio::time::timeout(Duration::from_secs(2), most_recent_update_available("https://api.github.com/repos/GrappleRobotics/GrappleHook/releases", |_| true)).await;
 
   if let Err(e) = &most_recent {
     log::warn!("Could not get latest GrappleHook version: {:?}", e)
   }
 
-  let most_recent = most_recent.ok().flatten();
+  let most_recent = most_recent.ok().map(|x| x.ok()).flatten().flatten();
 
   tauri::async_runtime::set(tokio::runtime::Handle::current());
   

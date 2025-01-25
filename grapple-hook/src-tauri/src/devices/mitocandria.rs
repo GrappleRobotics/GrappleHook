@@ -1,9 +1,11 @@
+use std::thread::current;
+
 use grapple_frc_msgs::{grapple::{device_info::GrappleModelId, errors::GrappleError, mitocandria::{self, MitocandriaAdjustableChannelRequest, MitocandriaSwitchableChannelRequest}, GrappleDeviceMessage, Request, TaggedGrappleMessage}, request_factory, DEVICE_ID_BROADCAST};
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
-use crate::rpc::RpcBase;
-use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest, GrappleDeviceResponse, VersionGatedDevice, RootDevice, start_field_upgrade, FirmwareValidatingDevice};
+use crate::{rpc::RpcBase, updates::{most_recent_update_available, LightReleaseResponse}};
+use super::{check_for_new_firmware_release_rpc_target, start_field_upgrade, Device, FirmwareValidatingDevice, GrappleDevice, GrappleDeviceRequest, GrappleDeviceResponse, HasFirmwareUpdateURLDevice, RootDevice, SendWrapper, SharedInfo, VersionGatedDevice};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MitocandriaStatus {
@@ -32,13 +34,43 @@ impl Mitocandria {
   }
 }
 
-impl VersionGatedDevice for Mitocandria {
-  fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    Self::require_version(version, ">= 2024.0.0, < 2024.1.0")
-  }
-
+impl HasFirmwareUpdateURLDevice for Mitocandria {
   fn firmware_url() -> Option<String> {
     Some("https://github.com/GrappleRobotics/Binaries/releases".to_owned())
+  }
+}
+
+#[async_trait::async_trait]
+impl VersionGatedDevice for Mitocandria {
+  fn validate_version(version: Option<String>) -> anyhow::Result<()> {
+    Self::require_version(version, ">= 2025.0.0, < 2025.1.0")
+  }
+
+  async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>{
+    let regex = regex::Regex::new("^([a-zA-Z0-9_]+)-v?(.+)$").unwrap();
+    let current = semver::Version::parse(&current_version).ok()?;
+
+    most_recent_update_available(
+      "https://api.github.com/repos/GrappleRobotics/Binaries/releases",
+      |release| {
+        match release.tag_name.to_string() {
+          x if x.starts_with("mitocandria") => {
+            if let Some(captures) = regex.captures(x.as_str()) {
+              let vers = semver::Version::parse(captures.get(2).map(|x| x.as_str()).unwrap_or("")).ok();
+              println!("{:?}", vers);
+              if let Some(vers) = vers {
+                vers > current && Self::validate_version(Some(vers.to_string())).is_ok()
+              } else {
+                false
+              }
+            } else {
+              false
+            }
+          },
+          _ => false
+        }
+      }
+    ).await.ok().flatten()
   }
 }
 
@@ -117,5 +149,9 @@ impl Mitocandria {
 
   async fn status(&self) -> anyhow::Result<MitocandriaStatus> {
     Ok(self.status.read().await.clone())
+  }
+
+  async fn check_for_new_firmware(&self) -> anyhow::Result<Option<LightReleaseResponse>> {
+    check_for_new_firmware_release_rpc_target::<Self>(&self.info).await
   }
 }

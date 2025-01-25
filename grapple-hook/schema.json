@@ -330,6 +330,24 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_firmware_url"
+              ]
+            }
+          }
         }
       ]
     },
@@ -371,6 +389,27 @@
               "type": "string",
               "enum": [
                 "progress"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get_firmware_url"
               ]
             }
           }
@@ -868,6 +907,24 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "check_for_new_firmware"
+              ]
+            }
+          }
         }
       ]
     },
@@ -977,6 +1034,31 @@
               "type": "string",
               "enum": [
                 "status"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/LightReleaseResponse"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "check_for_new_firmware"
               ]
             }
           }
@@ -1303,6 +1385,24 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "check_for_new_firmware"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1394,6 +1494,31 @@
               "type": "string",
               "enum": [
                 "status"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/LightReleaseResponse"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "check_for_new_firmware"
               ]
             }
           }

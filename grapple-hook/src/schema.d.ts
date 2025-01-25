@@ -15,6 +15,10 @@ export type FirmwareUpgradeDeviceRequest =
   | {
       data: {};
       method: "progress";
+    }
+  | {
+      data: {};
+      method: "get_firmware_url";
     };
 export type FirmwareUpgradeDeviceResponse =
   | {
@@ -24,6 +28,10 @@ export type FirmwareUpgradeDeviceResponse =
   | {
       data: number | null;
       method: "progress";
+    }
+  | {
+      data: string | null;
+      method: "get_firmware_url";
     };
 export type FlexiCanRequest =
   | {
@@ -123,6 +131,10 @@ export type LaserCanRequest =
   | {
       data: {};
       method: "status";
+    }
+  | {
+      data: {};
+      method: "check_for_new_firmware";
     };
 export type LaserCanRangingMode = "Short" | "Long";
 export type LaserCanTimingBudget = "TB20ms" | "TB33ms" | "TB50ms" | "TB100ms";
@@ -150,6 +162,10 @@ export type LaserCanResponse =
   | {
       data: LaserCanStatus;
       method: "status";
+    }
+  | {
+      data: LightReleaseResponse | null;
+      method: "check_for_new_firmware";
     };
 export type MitocandriaRequest =
   | {
@@ -177,6 +193,10 @@ export type MitocandriaRequest =
   | {
       data: {};
       method: "status";
+    }
+  | {
+      data: {};
+      method: "check_for_new_firmware";
     };
 export type MitocandriaResponse =
   | {
@@ -198,6 +218,10 @@ export type MitocandriaResponse =
   | {
       data: MitocandriaStatus;
       method: "status";
+    }
+  | {
+      data: LightReleaseResponse | null;
+      method: "check_for_new_firmware";
     };
 export type MitocandriaChannelStatus =
   | {

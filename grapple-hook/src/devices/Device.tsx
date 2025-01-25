@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Button, Col, FormControl, ProgressBar, Row } from "react-bootstrap";
+import { Alert, Button, Col, FormControl, ProgressBar, Row } from "react-bootstrap";
 import "./Device.scss";
 import confirmBool, { confirmModal } from "../Confirm";
-import { DeviceId, DeviceInfo, DeviceType, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, GrappleDeviceRequest, GrappleDeviceResponse, GrappleModelId } from "../schema";
+import { DeviceId, DeviceInfo, DeviceType, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, GrappleDeviceRequest, GrappleDeviceResponse, GrappleModelId, LightReleaseResponse } from "../schema";
 import Bug from "../Bug";
 import { rpc } from "../rpc";
 import { useToasts } from "../toasts";
@@ -10,6 +10,8 @@ import LaserCanComponent from "./LaserCan";
 import OldVersionDevice from "./OldVersionDevice";
 import FlexiCanComponent from "./FlexiCan";
 import MitocandriaComponent from "./Mitocandria";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faInfoCircle, faMagicWandSparkles } from "@fortawesome/free-solid-svg-icons";
 
 type FactoryFunc = (info: DeviceInfo, invoke: (msg: any) => Promise<any>) => any;
 const FACTORIES: { [k: string]: FactoryFunc } = {
@@ -70,10 +72,11 @@ type GrappleDeviceHeaderComponentProps = {
   info: DeviceInfo,
   invoke: (msg: GrappleDeviceRequest) => Promise<GrappleDeviceResponse>,
   start_dfu?: () => any,
+  update_details?: LightReleaseResponse | null
 }
 
 export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponentProps) {
-  const { info, invoke, start_dfu } = props;
+  const { info, invoke, start_dfu, update_details } = props;
   const { addError } = useToasts();
 
   const changeId = async (serial: number, name: string, currentId: number) => {
@@ -120,19 +123,33 @@ export function GrappleDeviceHeaderComponent(props: GrappleDeviceHeaderComponent
       start_dfu!()
   }
 
-  return <Row>
-    <Col>
-      <Button size="sm" className="mx-1" variant="info" onClick={() => rpc<GrappleDeviceRequest, GrappleDeviceResponse, "blink">(invoke, "blink", {})}> Blink </Button>
-      <Button size="sm" className="mx-1" variant="secondary" onClick={() => changeId(info.serial!, info.name!, info.device_id!)}> Change ID </Button>
-      <Button size="sm" className="mx-1" variant="secondary" onClick={() => changeName(info.serial!, info.name!)}> Change Name </Button>
-    </Col>
-    <Col md="auto">
-      {
-        start_dfu && <Button size="sm" className="mx-1" variant="purple" onClick={startFieldUpgrade}> Firmware Upgrade </Button>
-      }
-      <Button size="sm" className="mx-1" variant="success" onClick={() => rpc<GrappleDeviceRequest, GrappleDeviceResponse, "commit_to_eeprom">(invoke, "commit_to_eeprom", {})}> Commit Configuration </Button>
-    </Col>
-  </Row>
+  return <React.Fragment>
+    <Row>
+      <Col>
+        <Button size="sm" className="mx-1" variant="info" onClick={() => rpc<GrappleDeviceRequest, GrappleDeviceResponse, "blink">(invoke, "blink", {})}> Blink </Button>
+        <Button size="sm" className="mx-1" variant="secondary" onClick={() => changeId(info.serial!, info.name!, info.device_id!)}> Change ID </Button>
+        <Button size="sm" className="mx-1" variant="secondary" onClick={() => changeName(info.serial!, info.name!)}> Change Name </Button>
+      </Col>
+      <Col md="auto">
+        {
+          start_dfu && <Button size="sm" className="mx-1" variant={ update_details ? "orange" : "purple" } onClick={startFieldUpgrade}> Firmware Upgrade </Button>
+        }
+        <Button size="sm" className="mx-1" variant="success" onClick={() => rpc<GrappleDeviceRequest, GrappleDeviceResponse, "commit_to_eeprom">(invoke, "commit_to_eeprom", {})}> Commit Configuration </Button>
+      </Col>
+    </Row>
+    {
+      update_details && <Row className="mt-3 mb-1">
+        <Col>
+          <Alert variant="orange">
+            <span style={{ fontSize: '1.5em' }}> <FontAwesomeIcon icon={faMagicWandSparkles} /> &nbsp; Update Available! </span>
+            <br />
+            <span>Version <strong>{ update_details.tag_name }</strong> is available for this device. </span>
+            Download the release <a target="_blank" href={update_details.html_url}>here</a> and upgrade using the "Firmware Upgrade" button above.
+          </Alert>
+        </Col>
+      </Row>
+    }
+  </React.Fragment>
 }
 
 type FirmwareUpdateComponentProps = {
@@ -144,6 +161,7 @@ export function FirmwareUpdateComponent(props: FirmwareUpdateComponentProps) {
   const { invoke } = props;
 
   const [ progress, setProgress ] = useState<number | null>(null);
+  const [ firmwareURL, setFirmwareURL ] = useState<string | null>(null);
   const { addError } = useToasts();
   
   useEffect(() => {
@@ -152,6 +170,11 @@ export function FirmwareUpdateComponent(props: FirmwareUpdateComponentProps) {
         .then(setProgress)
         .catch(e => {});    // Discard, it's usually a message to say that the device is disconnected and the UI fragment just hasn't been evicted yet.
     }, 250);
+
+    rpc<FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, "get_firmware_url">(invoke, "get_firmware_url", {})
+      .then(setFirmwareURL)
+      .catch(e => {})
+
     return () => clearInterval(interval);
   }, [])
 
@@ -171,6 +194,11 @@ export function FirmwareUpdateComponent(props: FirmwareUpdateComponentProps) {
           <Col> <ProgressBar min={0} max={100} now={progress} variant="purple" animated striped /> </Col>
         </Row>
       </React.Fragment> : <React.Fragment>
+        { firmwareURL && <Row className="mb-2">
+          <Col className="text-muted">
+            <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; You can download new firmware for this device <a target="_blank" href={firmwareURL}>here.</a>
+          </Col>
+        </Row> }
         <Row>
           <Col>
             <FormControl type="file" accept=".grplfw" onChange={e => uploadFirmware((e.target as any).files[0])} />

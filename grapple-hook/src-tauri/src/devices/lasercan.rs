@@ -2,8 +2,8 @@ use grapple_frc_msgs::{grapple::{Request, errors::GrappleError, lasercan::{Laser
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
-use crate::rpc::RpcBase;
-use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest, GrappleDeviceResponse, VersionGatedDevice, RootDevice, start_field_upgrade, FirmwareValidatingDevice};
+use crate::{rpc::RpcBase, updates::{most_recent_update_available, LightReleaseResponse}};
+use super::{check_for_new_firmware_release_rpc_target, start_field_upgrade, Device, FirmwareValidatingDevice, GrappleDevice, GrappleDeviceRequest, GrappleDeviceResponse, HasFirmwareUpdateURLDevice, RootDevice, SendWrapper, SharedInfo, VersionGatedDevice};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LaserCanStatus {
@@ -32,13 +32,32 @@ impl LaserCan {
   }
 }
 
+impl HasFirmwareUpdateURLDevice for LaserCan {
+  fn firmware_url() -> Option<String> {
+    Some("https://api.github.com/repos/GrappleRobotics/LaserCAN/releases".to_owned())
+  }
+}
+
+#[async_trait::async_trait]
 impl VersionGatedDevice for LaserCan {
   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
     Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
   }
+  
+  async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>{
+    let current = semver::Version::parse(&current_version).ok()?;
 
-  fn firmware_url() -> Option<String> {
-    Some("https://github.com/GrappleRobotics/LaserCAN/releases".to_owned())
+    most_recent_update_available(
+      "https://github.com/GrappleRobotics/LaserCAN",
+      |release| {
+        let vers = semver::Version::parse(&release.tag_name[1..]).ok();
+        if let Some(vers) = vers {
+          vers > current && Self::validate_version(Some(vers.to_string())).is_ok()
+        } else {
+          false
+        }
+      }
+    ).await.ok().flatten()
   }
 }
 
@@ -122,5 +141,9 @@ impl LaserCan {
 
   async fn status(&self) -> anyhow::Result<LaserCanStatus> {
     Ok(self.status.read().await.clone())
+  }
+
+  async fn check_for_new_firmware(&self) -> anyhow::Result<Option<LightReleaseResponse>> {
+    check_for_new_firmware_release_rpc_target::<Self>(&self.info).await
   }
 }

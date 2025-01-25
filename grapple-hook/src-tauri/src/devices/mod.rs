@@ -19,7 +19,7 @@ use serde::{Serialize, Deserialize};
 use tokio::sync::{mpsc, RwLock, Notify, oneshot};
 use uuid::Uuid;
 
-use crate::rpc::RpcBase;
+use crate::{rpc::RpcBase, updates::LightReleaseResponse};
 
 use self::device_manager::RepliesWaiting;
 
@@ -234,7 +234,7 @@ pub async fn start_field_upgrade(sender: &SendWrapper, serial: u32) -> anyhow::R
 }
 
 #[rpc]
-impl<T: FirmwareValidatingDevice + Send + Sync> FirmwareUpgradeDevice<T> {
+impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> FirmwareUpgradeDevice<T> {
   async fn do_field_upgrade(&self, data: Vec<u8>) -> anyhow::Result<()> {
     <T>::validate_firmware(&*self.info.read().await, &data)?;
 
@@ -254,16 +254,20 @@ impl<T: FirmwareValidatingDevice + Send + Sync> FirmwareUpgradeDevice<T> {
   async fn progress(&self) -> anyhow::Result<Option<f64>> {
     Ok(self.progress.read().await.clone())
   }
+
+  async fn get_firmware_url(&self) -> anyhow::Result<Option<String>> {
+    Ok(T::firmware_url())
+  }
 }
 
-impl<T: FirmwareValidatingDevice + Send + Sync> RootDevice for FirmwareUpgradeDevice<T> {
+impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> RootDevice for FirmwareUpgradeDevice<T> {
   fn device_class(&self) ->  &'static str {
     "GrappleFirmwareUpgrade"
   }
 }
 
 #[async_trait::async_trait]
-impl<T: FirmwareValidatingDevice + Send + Sync> Device for FirmwareUpgradeDevice<T> {
+impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> Device for FirmwareUpgradeDevice<T> {
   async fn handle(&self, msg: TaggedGrappleMessage<'static>) -> anyhow::Result<()> {
     if msg.device_id == DEVICE_ID_BROADCAST || Some(msg.device_id) == self.info.read().await.device_id {
       match msg.clone().msg {
@@ -280,14 +284,18 @@ impl<T: FirmwareValidatingDevice + Send + Sync> Device for FirmwareUpgradeDevice
   }
 }
 
+pub trait HasFirmwareUpdateURLDevice {
+  fn firmware_url() -> Option<String>;
+}
+
 pub trait FirmwareValidatingDevice {
   fn validate_firmware(info: &DeviceInfo, buf: &[u8]) -> anyhow::Result<()>;
 }
 
 #[async_trait::async_trait]
-pub trait VersionGatedDevice : RootDevice + Sized + Sync + 'static {
+pub trait VersionGatedDevice : HasFirmwareUpdateURLDevice + RootDevice + Sized + Sync + 'static {
   fn validate_version(version: Option<String>) -> anyhow::Result<()>;
-  fn firmware_url() -> Option<String>;
+  async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>;
 
   fn require_version(version: Option<String>, req: &str) -> anyhow::Result<()> {
     if let Some(v) = version {
@@ -304,6 +312,14 @@ pub trait VersionGatedDevice : RootDevice + Sized + Sync + 'static {
       Ok(_) => Box::new(create_fn(send, info)),
       Err(e) => Box::new(OldVersionDevice::new(send, info, format!("{}", e), Self::firmware_url()))
     }
+  }
+}
+
+async fn check_for_new_firmware_release_rpc_target<T: VersionGatedDevice>(info: &SharedInfo) -> anyhow::Result<Option<LightReleaseResponse>> {
+  let fw = &info.read().await.firmware_version;
+  match fw {
+    Some(x) => Ok(T::check_for_new_firmware_release(&x).await),
+    None => anyhow::bail!("Can't check for new releases - device has no version")
   }
 }
 

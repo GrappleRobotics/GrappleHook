@@ -2,7 +2,7 @@ use grapple_frc_msgs::{grapple::{device_info::GrappleModelId, GrappleDeviceMessa
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
-use crate::rpc::RpcBase;
+use crate::{rpc::RpcBase, updates::LightReleaseResponse};
 use super::{SendWrapper, SharedInfo, GrappleDevice, Device, GrappleDeviceRequest, GrappleDeviceResponse, VersionGatedDevice, RootDevice, start_field_upgrade, FirmwareValidatingDevice};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -32,17 +32,17 @@ impl FlexiCan {
   }
 }
 
-impl VersionGatedDevice for FlexiCan {
-  fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    // Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
-    Ok(())
-  }
+// #[async_trait::async_trait]
+// impl VersionGatedDevice for FlexiCan {
+//   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
+//     // Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
+//     Ok(())
+//   }
 
-  fn firmware_url() -> Option<String> {
-    // Some("https://github.com/GrappleRobotics/LaserCAN/releases".to_owned())
-    None
-  }
-}
+//   async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>{
+//     None
+//   }
+// }
 
 #[async_trait::async_trait]
 impl RootDevice for FlexiCan {

@@ -6,7 +6,7 @@ import { Button, Col, FormControl, FormSelect, ProgressBar, Row } from "react-bo
 import SimpleTooltip from "../SimpleTooltip";
 import { confirmModal } from "../Confirm";
 import "./LaserCan.scss";
-import { DeviceInfo, LaserCanRequest, LaserCanResponse, LaserCanStatus, LaserCanTimingBudget } from "../schema";
+import { DeviceInfo, LaserCanRequest, LaserCanResponse, LaserCanStatus, LaserCanTimingBudget, LightReleaseResponse } from "../schema";
 import { useToasts } from "../toasts";
 import { rpc } from "../rpc";
 import { FirmwareUpdateComponent, GrappleDeviceHeaderComponent } from "./Device";
@@ -40,6 +40,7 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
   const { addError } = useToasts();
 
   const [ status, setStatus ] = useState<LaserCanStatus>();
+  const [ updateDetails, setUpdateDetails ] = useState<LightReleaseResponse | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,6 +48,11 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
         .then(setStatus)
         .catch(e => {});  // Discard, it's usually a message to say that the device is disconnected and the UI fragment just hasn't been evicted yet.
     }, 50);
+    
+    rpc<LaserCanRequest, LaserCanResponse, "check_for_new_firmware">(invoke, "check_for_new_firmware", {})
+      .then(setUpdateDetails)
+      .catch(e => {})
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -121,6 +127,7 @@ export default function LaserCanComponent(props: LaserCanComponentProps) {
           info={info}
           invoke={async (msg) => await rpc<LaserCanRequest, LaserCanResponse, "grapple">(invoke, "grapple", { msg })}
           start_dfu={async () => await rpc<LaserCanRequest, LaserCanResponse, "start_field_upgrade">(invoke, "start_field_upgrade", {})}
+          update_details={updateDetails}
         />
       </Col>
     </Row>
