@@ -8,7 +8,7 @@ pub mod mitocandria;
 pub mod generic_usb;
 // pub mod powerful_panda;
 
-use std::{sync::Arc, time::Duration, collections::HashMap, marker::PhantomData, borrow::Cow};
+use std::{borrow::Cow, collections::HashMap, io::{Cursor, Read}, marker::PhantomData, sync::Arc, time::Duration};
 
 use bounded_static::IntoBoundedStatic;
 use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, DEVICE_ID_BROADCAST, binmarshal::{MarshalUpdate, AsymmetricCow, Payload}, MessageId};
@@ -233,10 +233,34 @@ pub async fn start_field_upgrade(sender: &SendWrapper, serial: u32) -> anyhow::R
   )).await
 }
 
+fn maybe_unpack_firmware(data: &[u8]) -> anyhow::Result<Vec<u8>> {
+  let mut archive = zip::ZipArchive::new(Cursor::new(data))?;
+
+  // TODO: Use https://github.com/GrappleRobotics/bundle/tree/master/grapple-bundle-lib
+
+  let mut index_file = archive.by_name("index")?;
+  let mut index_content = String::new();
+  index_file.read_to_string(&mut index_content)?;
+  let index: serde_json::Value = serde_json::from_str(&index_content)?;
+  drop(index_file);
+
+  let mut firmware_f = archive.by_name(index.get("firmware_update_bin").map(|x| x.as_str()).flatten().ok_or(anyhow::anyhow!("Invalid Index"))?)?;
+  let mut v = vec![];
+  firmware_f.read_to_end(&mut v)?;
+  Ok(v)
+}
+
 #[rpc]
 impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> FirmwareUpgradeDevice<T> {
   async fn do_field_upgrade(&self, data: Vec<u8>) -> anyhow::Result<()> {
-    <T>::validate_firmware(&*self.info.read().await, &data)?;
+    let buf = match maybe_unpack_firmware(&data) {
+      Ok(buf) => buf,
+      Err(_) => {
+        let d = data;
+        <T>::validate_firmware(&*self.info.read().await, &d).map_err(|e| anyhow::anyhow!("Not a valid firmware file: {}", e))?;
+        d
+      }
+    };
 
     let sender = self.sender.clone();
     let progress = self.progress.clone();
@@ -245,8 +269,8 @@ impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> Fir
     let chunk_size = self.chunk_size;
 
     tokio::task::spawn(async move {
-      let data = data;
-      Self::field_upgrade_worker(sender, id, &data[..], progress, notify, chunk_size).await.ok();
+      let d = buf;
+      Self::field_upgrade_worker(sender, id, &d[..], progress, notify, chunk_size).await.ok();
     });
     Ok(())
   }

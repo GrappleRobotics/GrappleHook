@@ -201,7 +201,7 @@ export function FirmwareUpdateComponent(props: FirmwareUpdateComponentProps) {
         </Row> }
         <Row>
           <Col>
-            <FormControl type="file" accept=".grplfw" onChange={e => uploadFirmware((e.target as any).files[0])} />
+            <FormControl type="file" accept=".grplfw,.grplbndl" onChange={e => uploadFirmware((e.target as any).files[0])} />
           </Col>
         </Row>
       </React.Fragment>
