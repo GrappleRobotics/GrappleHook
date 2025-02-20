@@ -41,7 +41,7 @@ impl HasFirmwareUpdateURLDevice for LaserCan {
 #[async_trait::async_trait]
 impl VersionGatedDevice for LaserCan {
   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    Self::require_version(version, ">= 2024.2.0, < 2024.3.0")
+    Self::require_version(version, ">= 2025.1.0, < 2025.2.0")
   }
   
   async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>{
