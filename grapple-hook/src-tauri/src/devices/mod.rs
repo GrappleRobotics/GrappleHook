@@ -201,10 +201,16 @@ impl<T: FirmwareValidatingDevice> FirmwareUpgradeDevice<T> {
     for (i, chunk) in chunks.enumerate() {
       info!("Chunk {} (len: {})", i, chunk.len());
 
+      let mut padded = vec![0u8; chunk_size];
+
+      for i in 0..chunk.len() {
+        padded[i] = chunk[i];
+      }
+
       sender.send(TaggedGrappleMessage::new(
         id,
         GrappleDeviceMessage::FirmwareUpdate(
-          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(chunk))).into_static())
+          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(&padded[..]))).into_static())
         )
       )).await?;
       tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
