@@ -5,7 +5,7 @@ import { rpc } from "../rpc"
 import { Button, Col, ProgressBar, Row } from "react-bootstrap"
 import { GrappleDeviceHeaderComponent } from "./Device"
 import "./Mitocandria.scss";
-import { confirmModal } from "../Confirm"
+import confirmBool, { confirmModal } from "../Confirm"
 import BufferedFormControl from "../BufferedFormControl"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCircleInfo, faInfoCircle, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons"
@@ -79,7 +79,28 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
         }
       ).catch(addError)
     }
-  }
+  };
+
+  const calibrate = async () => {
+    const startCalib = await confirmBool("", {
+      title: "Start Calibration Routine",
+      okText: "Start Calibration",
+      renderInner: () => <React.Fragment>
+        <p className="text-warning">
+          <FontAwesomeIcon icon={faTriangleExclamation} />
+          The Auto-Calibration Routine will disable the Adjustable Rail output during the calibration.
+        </p>
+      </React.Fragment>
+    });
+
+    if (startCalib) {
+      rpc<MitocandriaRequest, MitocandriaResponse, "calibrate_adjustable_channel">(
+        invoke,
+        "calibrate_adjustable_channel",
+        { }
+      ).catch(addError)
+    }
+  };
 
   return <div className="powerful-panda">
     <Row className="mb-2">
@@ -117,6 +138,12 @@ export default function MitocandriaComponent(props: MitocandriaProps) {
                     channel.type == "Adjustable" &&
                       <Button size="sm" variant="purple" onClick={() => changeVoltageSetpoint(channel.data.voltage_setpoint / 1000.0, i)}>
                         { (channel.data.voltage / 1000.0).toFixed(2) }V
+                      </Button>
+                  } &nbsp; 
+                  {
+                    channel.type == "Adjustable" &&
+                      <Button size="sm" variant="purple" onClick={() => calibrate()}>
+                        CALIBRATE
                       </Button>
                   }
                 </h4>

@@ -185,6 +185,10 @@ export type MitocandriaRequest =
       method: "set_adjustable_channel";
     }
   | {
+      data: {};
+      method: "calibrate_adjustable_channel";
+    }
+  | {
       data: {
         msg: GrappleDeviceRequest;
       };
@@ -210,6 +214,10 @@ export type MitocandriaResponse =
   | {
       data: null;
       method: "set_adjustable_channel";
+    }
+  | {
+      data: null;
+      method: "calibrate_adjustable_channel";
     }
   | {
       data: GrappleDeviceResponse;

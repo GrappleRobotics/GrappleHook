@@ -69,13 +69,12 @@ impl RoboRioDaemon {
         msg = framed.next() => match msg {
           Some(Ok(msg)) => {
             let id2 = Into::<grapple_frc_msgs::grapple::GrappleMessageId>::into(msg.id);
-            // println!("{:?}", id2);
             let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.data.0[..]), msg.id);
             match manufacturer_msg {
               Ok(ManufacturerMessage::Grapple(grpl_msg)) => {
                 let mut storage = Vec::new();
-                if let Ok(Some(grpl_unfragmented)) = reassemble_rx.defragment(msg.timestamp as i64, &msg.id, grpl_msg, &mut storage) {
-                  inner.device_manager.on_message("CAN".to_owned(), msg.id.clone().into(), TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
+                if let Ok(Some((gid, grpl_unfragmented))) = reassemble_rx.defragment(msg.timestamp as i64, &msg.id, grpl_msg, &mut storage) {
+                  inner.device_manager.on_message("CAN".to_owned(), gid, TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
                 }
               },
               _ => ()

@@ -1350,6 +1350,24 @@
           ],
           "properties": {
             "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "calibrate_adjustable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
               "type": "object",
               "required": [
                 "msg"
@@ -1458,6 +1476,24 @@
               "type": "string",
               "enum": [
                 "set_adjustable_channel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "calibrate_adjustable_channel"
               ]
             }
           }

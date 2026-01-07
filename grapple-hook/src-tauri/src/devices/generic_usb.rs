@@ -64,8 +64,8 @@ impl GenericUSB {
             match manufacturer_msg {
               Ok(ManufacturerMessage::Grapple(grpl_msg)) => {
                 let mut storage = Vec::new();
-                if let Ok(Some(grpl_unfragmented)) = reassemble_rx.defragment(0, &msg.id, grpl_msg, &mut storage) {
-                  inner.device_manager.on_message("USB".to_owned(), msg.id.clone().into(), TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
+                if let Ok(Some((gid, grpl_unfragmented))) = reassemble_rx.defragment(0, &msg.id, grpl_msg, &mut storage) {
+                  inner.device_manager.on_message("USB".to_owned(), gid, TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
                 }
               },
               _ => ()

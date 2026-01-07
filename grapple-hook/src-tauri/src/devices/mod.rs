@@ -11,7 +11,7 @@ pub mod generic_usb;
 use std::{borrow::Cow, collections::HashMap, io::{Cursor, Read}, marker::PhantomData, sync::Arc, time::Duration};
 
 use bounded_static::IntoBoundedStatic;
-use grapple_frc_msgs::{Validate, grapple::{device_info::GrappleModelId, GrappleDeviceMessage, firmware::GrappleFirmwareMessage, TaggedGrappleMessage, GrappleMessageId}, DEVICE_ID_BROADCAST, binmarshal::{MarshalUpdate, AsymmetricCow, Payload}, MessageId};
+use grapple_frc_msgs::{binmarshal::{AsymmetricCow, MarshalUpdate, Payload}, grapple::{device_info::GrappleModelId, errors::GrappleError, firmware::{FlashParameters, GrappleFirmwareMessage, UpdatePartV2Payload}, GrappleDeviceMessage, GrappleMessageId, Request, TaggedGrappleMessage}, request_factory, MessageId, Validate, DEVICE_ID_BROADCAST};
 use grapple_hook_macros::rpc;
 use log::info;
 use semver::{Version, VersionReq};
@@ -196,24 +196,68 @@ impl<T: FirmwareValidatingDevice> FirmwareUpgradeDevice<T> {
 
   pub async fn field_upgrade_worker(sender: SendWrapper, id: u8, data: &[u8], progress: Arc<RwLock<Option<f64>>>, ack: Arc<Notify>, chunk_size: usize) -> anyhow::Result<()> {
     *progress.write().await = Some(0.0);
-    let chunks = data.chunks(chunk_size);
+
+    // Try to check for V2 firmware upgrade
+    let (encode, decode) = request_factory!(dat2, GrappleDeviceMessage::FirmwareUpdate(
+      GrappleFirmwareMessage::GetFlashParameters(dat2)
+    ));
+
+    let msg = sender.request(TaggedGrappleMessage::new(id, encode(())), 300, 5).await;
+
+    let mut flash_params = FlashParameters {
+      flash_compat_version: 1,
+      align: chunk_size as u16,
+      payload_len: chunk_size as u16,
+    };
+    println!("{:?}", msg);
+
+    match msg {
+      Ok(msg) => {
+        let result = decode(msg.msg).ok().map(|x| x.ok()).flatten();
+        if let Some(params) = result {
+          flash_params = params
+        }
+      },
+      // Default to v1
+      Err(_) => { },
+    }
+
+    let chunks = data.chunks(flash_params.payload_len as usize);
     let nchunks = chunks.len();
     for (i, chunk) in chunks.enumerate() {
-      info!("Chunk {} (len: {})", i, chunk.len());
+      info!("Chunk {} of {} (len: {})", i, nchunks, chunk.len());
 
-      let mut padded = vec![0u8; chunk_size];
+      let mut padded = vec![0u8; flash_params.payload_len as usize];
 
       for i in 0..chunk.len() {
         padded[i] = chunk[i];
       }
 
-      sender.send(TaggedGrappleMessage::new(
-        id,
-        GrappleDeviceMessage::FirmwareUpdate(
-          GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(&padded[..]))).into_static())
-        )
-      )).await?;
-      tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
+      match flash_params.flash_compat_version {
+        0 => { },
+        1 => {
+          sender.send(TaggedGrappleMessage::new(
+            id,
+            GrappleDeviceMessage::FirmwareUpdate(
+              GrappleFirmwareMessage::UpdatePart(AsymmetricCow(Cow::<Payload>::Borrowed(Into::into(&padded[..]))).into_static())
+            )
+          )).await?;
+          tokio::time::timeout(Duration::from_millis(1000), ack.notified()).await?;
+        },
+        2.. => {
+          let (part_encode, part_decode) = request_factory!(dat2, GrappleDeviceMessage::FirmwareUpdate(
+            GrappleFirmwareMessage::UpdatePartV2(dat2)
+          ));
+
+          let msg = sender.request(TaggedGrappleMessage::new(id, part_encode(UpdatePartV2Payload {
+            offset: i as u32 * flash_params.payload_len as u32,
+            payload: Cow::<Payload>::Borrowed(Into::into(&padded[..])).into_static().into(),
+          })), 300, 5).await?;
+
+          part_decode(msg.msg)??;
+        }
+      }
+
       *progress.write().await = Some((i + 1) as f64 / (nchunks as f64) * 100.0);
     }
 
@@ -276,7 +320,8 @@ impl<T: FirmwareValidatingDevice + HasFirmwareUpdateURLDevice + Send + Sync> Fir
 
     tokio::task::spawn(async move {
       let d = buf;
-      Self::field_upgrade_worker(sender, id, &d[..], progress, notify, chunk_size).await.ok();
+      let r = Self::field_upgrade_worker(sender, id, &d[..], progress, notify, chunk_size).await;
+      println!("FW Update Result: {:?}", r);
     });
     Ok(())
   }

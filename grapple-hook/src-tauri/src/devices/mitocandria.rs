@@ -1,6 +1,6 @@
 use std::thread::current;
 
-use grapple_frc_msgs::{grapple::{device_info::GrappleModelId, errors::GrappleError, mitocandria::{self, MitocandriaAdjustableChannelRequest, MitocandriaSwitchableChannelRequest}, GrappleDeviceMessage, Request, TaggedGrappleMessage}, request_factory, DEVICE_ID_BROADCAST};
+use grapple_frc_msgs::{DEVICE_ID_BROADCAST, grapple::{GrappleDeviceMessage, Request, TaggedGrappleMessage, device_info::GrappleModelId, errors::GrappleError, mitocandria::{self, MitocandriaAdjustableChannelCalibrationRequest, MitocandriaAdjustableChannelRequest, MitocandriaSwitchableChannelRequest}}, request_factory};
 use grapple_hook_macros::rpc;
 use tokio::sync::RwLock;
 
@@ -43,7 +43,7 @@ impl HasFirmwareUpdateURLDevice for Mitocandria {
 #[async_trait::async_trait]
 impl VersionGatedDevice for Mitocandria {
   fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-    Self::require_version(version, ">= 2025.0.0, < 2025.1.0")
+    Self::require_version(version, ">= 2025.0.1, < 2025.1.0")
   }
 
   async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse>{
@@ -139,6 +139,17 @@ impl Mitocandria {
     ));
 
     let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(channel)), 300, 5).await?;
+    decode(msg.msg)??;
+    Ok(())
+  }
+
+  async fn calibrate_adjustable_channel(&self) -> anyhow::Result<()> {
+    let id = self.info.read().await.require_device_id()?;
+    let (encode, decode) = request_factory!(data, GrappleDeviceMessage::PowerDistributionModule(
+      mitocandria::MitocandriaMessage::ChannelRequest(mitocandria::MitocandriaChannelRequest::StartAutoCalibrate(data))
+    ));
+
+    let msg = self.sender.request(TaggedGrappleMessage::new(id, encode(())), 300, 5).await?;
     decode(msg.msg)??;
     Ok(())
   }

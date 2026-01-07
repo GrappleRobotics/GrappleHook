@@ -34,7 +34,7 @@ impl LaserCan {
 
 impl HasFirmwareUpdateURLDevice for LaserCan {
   fn firmware_url() -> Option<String> {
-    Some("https://api.github.com/repos/GrappleRobotics/LaserCAN/releases".to_owned())
+    Some("https://github.com/GrappleRobotics/LaserCAN/releases".to_owned())
   }
 }
 
