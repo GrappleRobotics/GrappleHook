@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, windows-latest]
+        platform: [ubuntu-24.04, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -62,10 +62,14 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-24.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf tree
+          sudo apt-get install -y libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf tree libsoup-3.0
+
+      - name: Add msbuild to PATH (windows only)
+        if: matrix.platform == 'windows-latest'
+        uses: microsoft/setup-msbuild@v2
 
       - name: install frontend dependencies
         run: cd grapple-hook && yarn install && yarn global add json-schema-to-typescript
