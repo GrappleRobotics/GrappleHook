@@ -1,7 +1,7 @@
 use std::{sync::{atomic::AtomicBool, Arc}, time::Duration, collections::HashMap, borrow::Cow};
 
 use bounded_static::ToBoundedStatic;
-use grapple_frc_msgs::{binmarshal::{BitView, Demarshal, LengthTaggedPayload, LengthTaggedPayloadOwned}, grapple::{fragments::FragmentReassembler, TaggedGrappleMessage}, ManufacturerMessage, bridge::BridgedCANMessage};
+use grapple_frc_msgs::{ManufacturerMessage, MessageId, binmarshal::{BitView, Demarshal, LengthTaggedPayload, LengthTaggedPayloadOwned}, bridge::BridgedCANMessage, grapple::{TaggedGrappleMessage, fragments::FragmentReassembler}};
 use futures_util::{SinkExt, StreamExt};
 use grapple_hook_macros::rpc;
 use log::{info, warn};
@@ -9,7 +9,7 @@ use rust_embed::RustEmbed;
 use tokio::{sync::{mpsc, Mutex}, net::TcpStream};
 use tokio_util::codec::Framed;
 
-use crate::rpc::RpcBase;
+use crate::{canlog::{CanLog, CanLogRequest, CanLogResponse}, rpc::RpcBase};
 
 use crate::{devices::{device_manager::{DeviceManager, DeviceManagerRequest, DeviceManagerResponse}, provider::{DeviceProvider, ProviderInfo}}, codecs::tcp_can_bridge::GrappleTcpCanBridgeCodec, ssh::SSHSession};
 
@@ -26,9 +26,12 @@ pub struct RoboRioDaemonInner {
   stop_signal_tx: mpsc::Sender<()>,
   stop_signal_rx: Mutex<mpsc::Receiver<()>>,
   can_send_rx: Mutex<mpsc::Receiver<TaggedGrappleMessage<'static>>>,
+  can_send_raw_rx: Mutex<mpsc::Receiver<(MessageId, Vec<u8>)>>,
 
   do_deploy: AtomicBool,
   address: Mutex<String>,
+
+  canlog: CanLog
 }
 
 pub struct RoboRioDaemon {
@@ -38,6 +41,7 @@ pub struct RoboRioDaemon {
 impl RoboRioDaemon {
   pub fn new() -> Self {
     let (can_send_tx, can_send_rx) = mpsc::channel(100);
+    let (can_send_raw_tx, can_send_raw_rx) = mpsc::channel(100);
     let (stop_signal_tx, stop_signal_rx) = mpsc::channel(5);
 
     let mut sends = HashMap::new();
@@ -50,8 +54,10 @@ impl RoboRioDaemon {
           device_manager: DeviceManager::new(sends),
           stop_signal_tx, stop_signal_rx: Mutex::new(stop_signal_rx),
           can_send_rx: Mutex::new(can_send_rx),
+          can_send_raw_rx: Mutex::new(can_send_raw_rx),
           do_deploy: AtomicBool::new(true),
-          address: Mutex::new(ROBORIO_ADDRESS.to_owned())
+          address: Mutex::new(ROBORIO_ADDRESS.to_owned()),
+          canlog: CanLog::new(512, can_send_raw_tx)
         }
       )
     }
@@ -59,6 +65,7 @@ impl RoboRioDaemon {
   
   async fn do_loop(mut framed: Framed<TcpStream, GrappleTcpCanBridgeCodec>, inner: Arc<RoboRioDaemonInner>) -> anyhow::Result<()> {
     let mut can_send_rx = inner.can_send_rx.try_lock().map_err(|_| anyhow::anyhow!("This RootDevice is already running!"))?;
+    let mut can_send_raw_rx = inner.can_send_raw_rx.try_lock().map_err(|_| anyhow::anyhow!("This RootDevice is already running!"))?;
     let mut stop_signal_rx = inner.stop_signal_rx.try_lock()?;
 
     let (mut reassemble_rx, mut reassemble_tx) = FragmentReassembler::new(1000, 8).split();
@@ -68,16 +75,24 @@ impl RoboRioDaemon {
       tokio::select! {
         msg = framed.next() => match msg {
           Some(Ok(msg)) => {
-            let id2 = Into::<grapple_frc_msgs::grapple::GrappleMessageId>::into(msg.id);
+            // let id2 = Into::<grapple_frc_msgs::grapple::GrappleMessageId>::into(msg.id);
+            let mut already_logged = false;
             let manufacturer_msg = ManufacturerMessage::read(&mut BitView::new(&msg.data.0[..]), msg.id);
             match manufacturer_msg {
               Ok(ManufacturerMessage::Grapple(grpl_msg)) => {
                 let mut storage = Vec::new();
                 if let Ok(Some((gid, grpl_unfragmented))) = reassemble_rx.defragment(msg.timestamp as i64, &msg.id, grpl_msg, &mut storage) {
+                  inner.canlog.on_message(&msg, Some(&grpl_unfragmented)).await;
+                  already_logged = true;
+
                   inner.device_manager.on_message("CAN".to_owned(), gid, TaggedGrappleMessage::new(msg.id.device_id, grpl_unfragmented.to_static())).await?;
                 }
               },
               _ => ()
+            }
+
+            if !already_logged {
+              inner.canlog.on_message(&msg, None).await;
             }
           },
           Some(Err(e)) => anyhow::bail!(e),
@@ -89,15 +104,26 @@ impl RoboRioDaemon {
             let TaggedGrappleMessage { device_id, msg } = msg;
 
             let mut msgs = vec![];
-            reassemble_tx.maybe_fragment(device_id, msg, &mut |id, buf| {
+            reassemble_tx.maybe_fragment(device_id, msg.clone(), &mut |id, buf| {
               msgs.push(BridgedCANMessage { id, timestamp: 0, data: Cow::<LengthTaggedPayload<u8>>::Owned(LengthTaggedPayloadOwned::new(buf.to_vec())).into() });
             }).ok();
 
-            for msg in msgs {
-              framed.send(msg).await?;
+            let len = msgs.len();
+            for (i, cur_msg) in msgs.into_iter().enumerate() {
+              inner.canlog.on_message(&cur_msg, (i == len - 1).then(|| &msg)).await;
+
+              framed.send(cur_msg).await?;
             }
           },
           None => ()
+        },
+        msg = can_send_raw_rx.recv() => match msg {
+            Some((id, data)) => {
+              let msg = BridgedCANMessage { id, timestamp: 0, data: Cow::<LengthTaggedPayload<u8>>::Owned(LengthTaggedPayloadOwned::new(data)).into() };
+              inner.canlog.on_message(&msg, None).await;
+              framed.send(msg).await?;
+            },
+            None => ()
         },
         sig = stop_signal_rx.recv() => match sig {
           Some(()) => {
@@ -220,5 +246,9 @@ impl RoboRioDaemon {
     let mut addr = self.inner.address.lock().await;
     *addr = address;
     Ok(())
+  }
+
+  async fn canlog_call(&self, req: CanLogRequest) -> anyhow::Result<CanLogResponse> {
+    self.inner.canlog.rpc_process(req).await
   }
 }

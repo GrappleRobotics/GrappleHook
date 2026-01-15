@@ -244,7 +244,7 @@ pub fn rpc(_attr: TokenStream, input: TokenStream) -> TokenStream {
             #(#request_variants),*
         }
 
-        #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+        #[derive(serde::Serialize, schemars::JsonSchema)]
         #[serde(tag="method", content="data")]
         pub enum #response_enum_ident {
             #(#response_variants),*

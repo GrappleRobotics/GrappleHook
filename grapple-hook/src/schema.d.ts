@@ -422,6 +422,62 @@ export type RoboRioDaemonRequest =
         address: string;
       };
       method: "set_address";
+    }
+  | {
+      data: {
+        req: CanLogRequest;
+      };
+      method: "canlog_call";
+    };
+export type CanLogRequest =
+  | {
+      data: {
+        enabled: boolean;
+      };
+      method: "set_log_enabled";
+    }
+  | {
+      data: {};
+      method: "clear";
+    }
+  | {
+      data: {
+        seq: number;
+      };
+      method: "read_after";
+    }
+  | {
+      data: {
+        filters: Filter[];
+      };
+      method: "set_filters";
+    }
+  | {
+      data: {
+        data: number[];
+        id: MessageId;
+      };
+      method: "send_raw";
+    };
+export type Filter =
+  | "GrappleOnly"
+  | {
+      IdMask: {
+        id: MessageId;
+        mask: MessageId;
+      };
+    }
+  | {
+      IdMaskRaw: {
+        id: number;
+        mask: number;
+      };
+    }
+  | {
+      BodySize: {
+        max: number;
+        min: number;
+      };
     };
 export type RoboRioDaemonResponse =
   | {
@@ -435,6 +491,434 @@ export type RoboRioDaemonResponse =
   | {
       data: null;
       method: "set_address";
+    }
+  | {
+      data: CanLogResponse;
+      method: "canlog_call";
+    };
+export type CanLogResponse =
+  | {
+      data: null;
+      method: "set_log_enabled";
+    }
+  | {
+      data: null;
+      method: "clear";
+    }
+  | {
+      data: MailboxItem[];
+      method: "read_after";
+    }
+  | {
+      data: null;
+      method: "set_filters";
+    }
+  | {
+      data: null;
+      method: "send_raw";
+    };
+export type GrappleDeviceMessage =
+  | {
+      data: GrappleBroadcastMessage;
+      type: "Broadcast";
+    }
+  | {
+      data: GrappleFirmwareMessage;
+      type: "FirmwareUpdate";
+    }
+  | {
+      data: LaserCanMessage;
+      type: "DistanceSensor";
+    }
+  | {
+      data: MitocandriaMessage;
+      type: "PowerDistributionModule";
+    }
+  | {
+      data: FlexiCANMessage;
+      type: "IOBreakout";
+    }
+  | {
+      data: MiscMessage;
+      type: "Misc";
+    };
+export type GrappleBroadcastMessage = {
+  data: GrappleDeviceInfo;
+  type: "DeviceInfo";
+};
+export type GrappleDeviceInfo =
+  | {
+      type: "EnumerateRequest";
+    }
+  | {
+      data: {
+        is_dfu: boolean;
+        is_dfu_in_progress: boolean;
+        model_id: GrappleModelId;
+        name: string;
+        serial: number;
+        version: string;
+      };
+      type: "EnumerateResponse";
+    }
+  | {
+      data: {
+        serial: number;
+      };
+      type: "Blink";
+    }
+  | {
+      data: {
+        name: string;
+        serial: number;
+      };
+      type: "SetName";
+    }
+  | {
+      data: {
+        serial: number;
+      };
+      type: "CommitConfig";
+    }
+  | {
+      data: {
+        new_id: number;
+        serial: number;
+      };
+      type: "SetId";
+    }
+  | {
+      type: "ArbitrationRequest";
+    }
+  | {
+      type: "ArbitrationReject";
+    };
+export type GrappleFirmwareMessage =
+  | {
+      data: {
+        serial: number;
+      };
+      type: "StartFieldUpgrade";
+    }
+  | {
+      data: number[];
+      type: "UpdatePart";
+    }
+  | {
+      type: "UpdatePartAck";
+    }
+  | {
+      type: "UpdateDone";
+    }
+  | {
+      data: RequestFor_UpdatePartV2PayloadAnd_ResultOf_NullOr_GrappleError;
+      type: "UpdatePartV2";
+    }
+  | {
+      data: RequestFor_NullAnd_ResultOf_FlashParametersOr_GrappleError;
+      type: "GetFlashParameters";
+    };
+export type RequestFor_UpdatePartV2PayloadAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: UpdatePartV2Payload;
+      type: "Request";
+    };
+export type ResultOf_NullOr_GrappleError =
+  | {
+      Ok: null;
+    }
+  | {
+      Err: GrappleError;
+    };
+export type GrappleError =
+  | {
+      data: string;
+      type: "ParameterOutOfBounds";
+    }
+  | {
+      data: string;
+      type: "FailedAssertion";
+    }
+  | {
+      data: string;
+      type: "TimedOut";
+    }
+  | {
+      data: string;
+      type: "Generic";
+    };
+export type RequestFor_NullAnd_ResultOf_FlashParametersOr_GrappleError =
+  | {
+      data: ResultOf_FlashParametersOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: null;
+      type: "Request";
+    };
+export type ResultOf_FlashParametersOr_GrappleError =
+  | {
+      Ok: FlashParameters;
+    }
+  | {
+      Err: GrappleError;
+    };
+export type LaserCanMessage =
+  | {
+      data: LaserCanMeasurement;
+      type: "Measurement";
+    }
+  | {
+      data: RequestFor_LaserCanRangingModeAnd_ResultOf_NullOr_GrappleError;
+      type: "SetRange";
+    }
+  | {
+      data: RequestFor_LaserCanRoiAnd_ResultOf_NullOr_GrappleError;
+      type: "SetRoi";
+    }
+  | {
+      data: RequestFor_LaserCanTimingBudgetAnd_ResultOf_NullOr_GrappleError;
+      type: "SetTimingBudget";
+    }
+  | {
+      data: RequestForUint16And_ResultOf_NullOr_GrappleError;
+      type: "SetLedThreshold";
+    };
+export type RequestFor_LaserCanRangingModeAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: LaserCanRangingMode;
+      type: "Request";
+    };
+export type RequestFor_LaserCanRoiAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: LaserCanRoi;
+      type: "Request";
+    };
+export type RequestFor_LaserCanTimingBudgetAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: LaserCanTimingBudget;
+      type: "Request";
+    };
+export type RequestForUint16And_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: number;
+      type: "Request";
+    };
+export type MitocandriaMessage =
+  | {
+      data: MitocandriaStatusFrame;
+      type: "StatusFrame";
+    }
+  | {
+      data: MitocandriaChannelRequest;
+      type: "ChannelRequest";
+    };
+export type MitocandriaChannelRequest =
+  | {
+      data: RequestFor_MitocandriaSwitchableChannelRequestAnd_ResultOf_NullOr_GrappleError;
+      type: "SetSwitchableChannel";
+    }
+  | {
+      data: RequestFor_MitocandriaAdjustableChannelRequestAnd_ResultOf_NullOr_GrappleError;
+      type: "SetAdjustableChannel";
+    }
+  | {
+      data: RequestFor_MitocandriaAdjustableChannelCalibrationRequestAnd_ResultOf_NullOr_GrappleError;
+      type: "CalibrateAdjChannel";
+    }
+  | {
+      data: RequestFor_NullAnd_ResultOf_NullOr_GrappleError;
+      type: "StartAutoCalibrate";
+    };
+export type RequestFor_MitocandriaSwitchableChannelRequestAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: MitocandriaSwitchableChannelRequest;
+      type: "Request";
+    };
+export type RequestFor_MitocandriaAdjustableChannelRequestAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: MitocandriaAdjustableChannelRequest;
+      type: "Request";
+    };
+export type RequestFor_MitocandriaAdjustableChannelCalibrationRequestAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: MitocandriaAdjustableChannelCalibrationRequest;
+      type: "Request";
+    };
+export type RequestFor_NullAnd_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: null;
+      type: "Request";
+    };
+export type FlexiCANMessage = {
+  data: BridgeMessages;
+  type: "Bridge";
+};
+export type BridgeMessages =
+  | {
+      data: RequestForUint8And_ResultOf_StringOr_GrappleError;
+      type: "GetChannelName";
+    }
+  | {
+      data: RequestForUint8And_ResultOf_NullOr_GrappleError;
+      type: "StartBridge";
+    }
+  | {
+      data: RequestForUint8And_ResultOf_NullOr_GrappleError;
+      type: "StopBridge";
+    }
+  | {
+      data: EncapsulatedMesssage;
+      type: "BridgeMessage";
+    };
+export type RequestForUint8And_ResultOf_StringOr_GrappleError =
+  | {
+      data: ResultOf_StringOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: number;
+      type: "Request";
+    };
+export type ResultOf_StringOr_GrappleError =
+  | {
+      Ok: string;
+    }
+  | {
+      Err: GrappleError;
+    };
+export type RequestForUint8And_ResultOf_NullOr_GrappleError =
+  | {
+      data: ResultOf_NullOr_GrappleError;
+      type: "Ack";
+    }
+  | {
+      data: number;
+      type: "Request";
+    };
+export type MiscMessage =
+  | {
+      data: number[];
+      type: "MiscMessage";
+    }
+  | {
+      data: JMSMessage;
+      type: "JMS";
+    };
+export type JMSMessage =
+  | {
+      data: JMSElectronicsStatus;
+      type: "Status";
+    }
+  | {
+      data: JMSRole;
+      type: "SetRole";
+    }
+  | {
+      data: JMSElectronicsUpdate;
+      type: "Update";
+    }
+  | {
+      type: "Blink";
+    };
+export type JMSCardStatus =
+  | "Lighting"
+  | {
+      /**
+       * @minItems 8
+       * @maxItems 8
+       */
+      IO: [boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean];
+    };
+export type JMSRole =
+  | ("ScoringTable" | "TimerRed" | "TimerBlue")
+  | {
+      Red: number;
+    }
+  | {
+      Blue: number;
+    };
+export type JMSCardUpdate =
+  | {
+      /**
+       * @minItems 0
+       * @maxItems 0
+       */
+      IO: [];
+    }
+  | {
+      Lighting: {
+        back_background: Pattern;
+        background: Pattern;
+        bottom_bar: Pattern;
+        text: string;
+        text_back: string;
+        text_back_colour: Colour;
+        text_colour: Colour;
+        top_bar: Pattern;
+      };
+    };
+export type Pattern =
+  | "Blank"
+  | {
+      Solid: Colour;
+    }
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      DiagonalStripes: [Colour, Colour];
+    }
+  | {
+      /**
+       * @minItems 3
+       * @maxItems 3
+       */
+      FillLeft: [Colour, Colour, number];
+    }
+  | {
+      /**
+       * @minItems 3
+       * @maxItems 3
+       */
+      FillRight: [Colour, Colour, number];
     };
 
 export interface MegaSchema {
@@ -517,6 +1001,58 @@ export interface DeviceInfo {
   name?: string | null;
   serial?: number | null;
 }
+export interface MessageId {
+  api_class: number;
+  api_index: number;
+  device_id: number;
+  device_type: number;
+  manufacturer: number;
+}
 export interface RoboRIOStatus {
   using_daemon: boolean;
+}
+export interface MailboxItem {
+  grpl_defrag?: GrappleDeviceMessage | null;
+  raw: BridgedCANMessage;
+  seq: number;
+}
+export interface UpdatePartV2Payload {
+  offset: number;
+  payload: number[];
+}
+export interface FlashParameters {
+  align: number;
+  flash_compat_version: number;
+  payload_len: number;
+}
+export interface MitocandriaAdjustableChannelCalibrationRequest {
+  offset_mv: number;
+}
+export interface EncapsulatedMesssage {
+  channel: number;
+  data: number[];
+  id: MessageId;
+  timestamp: number;
+}
+export interface JMSElectronicsStatus {
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  cards: [JMSCardStatus, JMSCardStatus];
+  role: JMSRole;
+}
+export interface JMSElectronicsUpdate {
+  card: number;
+  update: JMSCardUpdate;
+}
+export interface Colour {
+  blue: number;
+  green: number;
+  red: number;
+}
+export interface BridgedCANMessage {
+  data: number[];
+  id: MessageId;
+  timestamp: number;
 }

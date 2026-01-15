@@ -120,3 +120,11 @@ $theme-colors: (
   margin-top: 10px;
   margin-bottom: 10px;
 }
+
+.canlog {
+  background-color: desaturate(darken(map-get($theme-colors, "orange"), 30%), 50%);
+  padding: 0.5em 1em;
+  border-radius: 1em;
+  border: 2px solid map-get($theme-colors, "gold");
+  margin-bottom: 2em;
+}

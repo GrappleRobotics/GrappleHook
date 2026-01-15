@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "GrappleHook",
-    "version": "25.0.7"
+    "version": "26.0.0"
   },
   "tauri": {
     "allowlist": {

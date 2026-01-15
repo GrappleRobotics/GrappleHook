@@ -67,6 +67,370 @@
     }
   },
   "definitions": {
+    "BridgeMessages": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_uint8_and_Result_of_String_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "GetChannelName"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_uint8_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "StartBridge"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_uint8_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "StopBridge"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/EncapsulatedMesssage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "BridgeMessage"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "BridgedCANMessage": {
+      "type": "object",
+      "required": [
+        "data",
+        "id",
+        "timestamp"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        },
+        "id": {
+          "$ref": "#/definitions/MessageId"
+        },
+        "timestamp": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "CanLogRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "enabled"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_log_enabled"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "clear"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "seq"
+              ],
+              "properties": {
+                "seq": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "read_after"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "filters"
+              ],
+              "properties": {
+                "filters": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Filter"
+                  }
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_filters"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "data",
+                "id"
+              ],
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                },
+                "id": {
+                  "$ref": "#/definitions/MessageId"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "send_raw"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "CanLogResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_log_enabled"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "clear"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MailboxItem"
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "read_after"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "set_filters"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "send_raw"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Colour": {
+      "type": "object",
+      "required": [
+        "blue",
+        "green",
+        "red"
+      ],
+      "properties": {
+        "blue": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "green": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "red": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
     "DeviceId": {
       "oneOf": [
         {
@@ -280,6 +644,128 @@
         }
       ]
     },
+    "EncapsulatedMesssage": {
+      "type": "object",
+      "required": [
+        "channel",
+        "data",
+        "id",
+        "timestamp"
+      ],
+      "properties": {
+        "channel": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        },
+        "id": {
+          "$ref": "#/definitions/MessageId"
+        },
+        "timestamp": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "Filter": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "GrappleOnly"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "IdMask"
+          ],
+          "properties": {
+            "IdMask": {
+              "type": "object",
+              "required": [
+                "id",
+                "mask"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/definitions/MessageId"
+                },
+                "mask": {
+                  "$ref": "#/definitions/MessageId"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "IdMaskRaw"
+          ],
+          "properties": {
+            "IdMaskRaw": {
+              "type": "object",
+              "required": [
+                "id",
+                "mask"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "mask": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "BodySize"
+          ],
+          "properties": {
+            "BodySize": {
+              "type": "object",
+              "required": [
+                "max",
+                "min"
+              ],
+              "properties": {
+                "max": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "min": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "FirmwareUpgradeDeviceRequest": {
       "oneOf": [
         {
@@ -416,6 +902,53 @@
         }
       ]
     },
+    "FlashParameters": {
+      "type": "object",
+      "required": [
+        "align",
+        "flash_compat_version",
+        "payload_len"
+      ],
+      "properties": {
+        "align": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "flash_compat_version": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "payload_len": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "FlexiCANMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/BridgeMessages"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Bridge"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "FlexiCanRequest": {
       "oneOf": [
         {
@@ -542,6 +1075,356 @@
     },
     "FlexiCanStatus": {
       "type": "object"
+    },
+    "GrappleBroadcastMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleDeviceInfo"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "DeviceInfo"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleDeviceInfo": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "EnumerateRequest"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "is_dfu",
+                "is_dfu_in_progress",
+                "model_id",
+                "name",
+                "serial",
+                "version"
+              ],
+              "properties": {
+                "is_dfu": {
+                  "type": "boolean"
+                },
+                "is_dfu_in_progress": {
+                  "type": "boolean"
+                },
+                "model_id": {
+                  "$ref": "#/definitions/GrappleModelId"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "version": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "EnumerateResponse"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "serial"
+              ],
+              "properties": {
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Blink"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "name",
+                "serial"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetName"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "serial"
+              ],
+              "properties": {
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "CommitConfig"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "new_id",
+                "serial"
+              ],
+              "properties": {
+                "new_id": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetId"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ArbitrationRequest"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ArbitrationReject"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleDeviceMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleBroadcastMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Broadcast"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/GrappleFirmwareMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "FirmwareUpdate"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "DistanceSensor"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "PowerDistributionModule"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FlexiCANMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "IOBreakout"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MiscMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Misc"
+              ]
+            }
+          }
+        }
+      ]
     },
     "GrappleDeviceRequest": {
       "oneOf": [
@@ -713,6 +1596,201 @@
         }
       ]
     },
+    "GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "ParameterOutOfBounds"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "FailedAssertion"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "TimedOut"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Generic"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "GrappleFirmwareMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "serial"
+              ],
+              "properties": {
+                "serial": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "StartFieldUpgrade"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "UpdatePart"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "UpdatePartAck"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "UpdateDone"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_UpdatePartV2Payload_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "UpdatePartV2"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_Null_and_Result_of_FlashParameters_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "GetFlashParameters"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "GrappleModelId": {
       "type": "string",
       "enum": [
@@ -720,6 +1798,249 @@
         "SpiderLan",
         "FlexiCAN",
         "MitoCANdria"
+      ]
+    },
+    "JMSCardStatus": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Lighting"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "IO"
+          ],
+          "properties": {
+            "IO": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              },
+              "maxItems": 8,
+              "minItems": 8
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "JMSCardUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "IO"
+          ],
+          "properties": {
+            "IO": {
+              "type": "array",
+              "items": [],
+              "maxItems": 0,
+              "minItems": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Lighting"
+          ],
+          "properties": {
+            "Lighting": {
+              "type": "object",
+              "required": [
+                "back_background",
+                "background",
+                "bottom_bar",
+                "text",
+                "text_back",
+                "text_back_colour",
+                "text_colour",
+                "top_bar"
+              ],
+              "properties": {
+                "back_background": {
+                  "$ref": "#/definitions/Pattern"
+                },
+                "background": {
+                  "$ref": "#/definitions/Pattern"
+                },
+                "bottom_bar": {
+                  "$ref": "#/definitions/Pattern"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "text_back": {
+                  "type": "string"
+                },
+                "text_back_colour": {
+                  "$ref": "#/definitions/Colour"
+                },
+                "text_colour": {
+                  "$ref": "#/definitions/Colour"
+                },
+                "top_bar": {
+                  "$ref": "#/definitions/Pattern"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "JMSElectronicsStatus": {
+      "type": "object",
+      "required": [
+        "cards",
+        "role"
+      ],
+      "properties": {
+        "cards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JMSCardStatus"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        "role": {
+          "$ref": "#/definitions/JMSRole"
+        }
+      }
+    },
+    "JMSElectronicsUpdate": {
+      "type": "object",
+      "required": [
+        "card",
+        "update"
+      ],
+      "properties": {
+        "card": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "update": {
+          "$ref": "#/definitions/JMSCardUpdate"
+        }
+      }
+    },
+    "JMSMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/JMSElectronicsStatus"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Status"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/JMSRole"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetRole"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/JMSElectronicsUpdate"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Update"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "Blink"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "JMSRole": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "ScoringTable",
+            "TimerRed",
+            "TimerBlue"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Red"
+          ],
+          "properties": {
+            "Red": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Blue"
+          ],
+          "properties": {
+            "Blue": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "LaserCanMeasurement": {
@@ -758,6 +2079,100 @@
           "minimum": 0.0
         }
       }
+    },
+    "LaserCanMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanMeasurement"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Measurement"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_LaserCanRangingMode_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetRange"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_LaserCanRoi_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetRoi"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_LaserCanTimingBudget_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetTimingBudget"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_uint16_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetLedThreshold"
+              ]
+            }
+          }
+        }
+      ]
     },
     "LaserCanRangingMode": {
       "type": "string",
@@ -1143,6 +2558,127 @@
         }
       }
     },
+    "MailboxItem": {
+      "type": "object",
+      "required": [
+        "raw",
+        "seq"
+      ],
+      "properties": {
+        "grpl_defrag": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/GrappleDeviceMessage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw": {
+          "$ref": "#/definitions/BridgedCANMessage"
+        },
+        "seq": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "MessageId": {
+      "type": "object",
+      "required": [
+        "api_class",
+        "api_index",
+        "device_id",
+        "device_type",
+        "manufacturer"
+      ],
+      "properties": {
+        "api_class": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "api_index": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "device_id": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "device_type": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "manufacturer": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
+    "MiscMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "MiscMessage"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/JMSMessage"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "JMS"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "MitocandriaAdjustableChannelCalibrationRequest": {
+      "type": "object",
+      "required": [
+        "offset_mv"
+      ],
+      "properties": {
+        "offset_mv": {
+          "type": "integer",
+          "format": "int16"
+        }
+      }
+    },
     "MitocandriaAdjustableChannelRequest": {
       "type": "object",
       "required": [
@@ -1161,6 +2697,82 @@
           "minimum": 0.0
         }
       }
+    },
+    "MitocandriaChannelRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_MitocandriaSwitchableChannelRequest_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetSwitchableChannel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_MitocandriaAdjustableChannelRequest_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SetAdjustableChannel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_MitocandriaAdjustableChannelCalibrationRequest_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "CalibrateAdjChannel"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Request_for_Null_and_Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "StartAutoCalibrate"
+              ]
+            }
+          }
+        }
+      ]
     },
     "MitocandriaChannelStatus": {
       "oneOf": [
@@ -1264,6 +2876,46 @@
               "type": "string",
               "enum": [
                 "Adjustable"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "MitocandriaMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaStatusFrame"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "StatusFrame"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaChannelRequest"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "ChannelRequest"
               ]
             }
           }
@@ -1772,6 +3424,104 @@
         }
       ]
     },
+    "Pattern": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Blank"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Solid"
+          ],
+          "properties": {
+            "Solid": {
+              "$ref": "#/definitions/Colour"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "DiagonalStripes"
+          ],
+          "properties": {
+            "DiagonalStripes": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Colour"
+                },
+                {
+                  "$ref": "#/definitions/Colour"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "FillLeft"
+          ],
+          "properties": {
+            "FillLeft": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Colour"
+                },
+                {
+                  "$ref": "#/definitions/Colour"
+                },
+                {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "FillRight"
+          ],
+          "properties": {
+            "FillRight": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Colour"
+                },
+                {
+                  "$ref": "#/definitions/Colour"
+                },
+                {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ProviderInfo": {
       "type": "object",
       "required": [
@@ -1934,6 +3684,570 @@
         }
       ]
     },
+    "Request_for_LaserCanRangingMode_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanRangingMode"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_LaserCanRoi_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanRoi"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_LaserCanTimingBudget_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/LaserCanTimingBudget"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_MitocandriaAdjustableChannelCalibrationRequest_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaAdjustableChannelCalibrationRequest"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_MitocandriaAdjustableChannelRequest_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaAdjustableChannelRequest"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_MitocandriaSwitchableChannelRequest_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MitocandriaSwitchableChannelRequest"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_Null_and_Result_of_FlashParameters_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_FlashParameters_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_Null_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_UpdatePartV2Payload_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/UpdatePartV2Payload"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_uint16_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_uint8_and_Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_Null_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Request_for_uint8_and_Result_of_String_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Result_of_String_or_GrappleError"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Ack"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "type"
+          ],
+          "properties": {
+            "data": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Request"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Result_of_FlashParameters_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Ok"
+          ],
+          "properties": {
+            "Ok": {
+              "$ref": "#/definitions/FlashParameters"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "Err"
+          ],
+          "properties": {
+            "Err": {
+              "$ref": "#/definitions/GrappleError"
+            }
+          }
+        }
+      ]
+    },
+    "Result_of_Null_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Ok"
+          ],
+          "properties": {
+            "Ok": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "Err"
+          ],
+          "properties": {
+            "Err": {
+              "$ref": "#/definitions/GrappleError"
+            }
+          }
+        }
+      ]
+    },
+    "Result_of_String_or_GrappleError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Ok"
+          ],
+          "properties": {
+            "Ok": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "Err"
+          ],
+          "properties": {
+            "Err": {
+              "$ref": "#/definitions/GrappleError"
+            }
+          }
+        }
+      ]
+    },
     "RoboRIOStatus": {
       "type": "object",
       "required": [
@@ -2016,6 +4330,32 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "type": "object",
+              "required": [
+                "req"
+              ],
+              "properties": {
+                "req": {
+                  "$ref": "#/definitions/CanLogRequest"
+                }
+              }
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "canlog_call"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2074,8 +4414,48 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "data",
+            "method"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/CanLogResponse"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "canlog_call"
+              ]
+            }
+          }
         }
       ]
+    },
+    "UpdatePartV2Payload": {
+      "type": "object",
+      "required": [
+        "offset",
+        "payload"
+      ],
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "payload": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
     },
     "WrappedDeviceProviderRequest": {
       "oneOf": [

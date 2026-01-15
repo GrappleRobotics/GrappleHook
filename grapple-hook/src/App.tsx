@@ -8,11 +8,14 @@ import Bug from "./Bug";
 import ProviderManagerComponent from "./providers/ProviderManager";
 import { LightReleaseResponse, ProviderManagerRequest, ProviderManagerResponse } from "./schema";
 import ToastProvider, { useToasts } from "./toasts";
+import DebugContextProvider, { useDebugCtx } from "./DebugContext";
 
 export default class App extends React.Component<{}> {
   render() {
     return <ToastProvider>
-      <AppInner />
+      <DebugContextProvider>
+        <AppInner />
+      </DebugContextProvider>
     </ToastProvider>
   }
 }
@@ -27,7 +30,8 @@ const our_invoke = async (msg: ProviderManagerRequest): Promise<ProviderManagerR
 
 export function AppInner() {
   const { toasts, addInfo, removeToast } = useToasts();
-
+  const { mode: debugMode } = useDebugCtx();
+  
   useEffect(() => {
     const interval = setTimeout(() => {
       invoke("is_update_available").then((update) => {
@@ -42,7 +46,7 @@ export function AppInner() {
 
   return <div className="container">
     <img src="icon.png" height={30} style={{ marginRight: "20px" }} />
-    <i style={{fontSize: "1.5em"}}>Grapple<strong>Hook</strong></i>
+    <i style={{fontSize: "1.5em", color: debugMode == "debug" ? "gold" : "white"}}>Grapple<strong>Hook</strong></i>
     <hr />
     
     <ProviderManagerComponent invoke={our_invoke} />

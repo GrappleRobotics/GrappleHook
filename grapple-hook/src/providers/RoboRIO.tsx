@@ -6,6 +6,8 @@ import { Col, FormLabel, Row, Tab, Tabs } from "react-bootstrap";
 import EnumToggleGroup from "../EnumToggleGroup";
 import BufferedFormControl from "../BufferedFormControl";
 import { CodeBlock } from "react-code-blocks";
+import { useDebugCtx } from "../DebugContext";
+import CanLog from "../debug/CanLog";
 
 export type RoboRIOProps = {
   info: ProviderInfo,
@@ -14,6 +16,8 @@ export type RoboRIOProps = {
 
 export default function RoboRIO(props: RoboRIOProps) {
   const { info, invoke } = props;
+
+  const { mode: debugMode } = useDebugCtx();
 
   const [ status, setStatus ] = useState<RoboRIOStatus>();
 
@@ -55,7 +59,17 @@ export default function RoboRIO(props: RoboRIOProps) {
       # ...
   `
 
+  const canLogEnabled = debugMode == "debug" && info.connected;
+
   return <div>
+    {
+      <Row style={{ display: canLogEnabled ? "" : "none" }}>
+        <Col>
+          <CanLog enabled={canLogEnabled} invoke={msg => rpc<RoboRioDaemonRequest, RoboRioDaemonResponse, "canlog_call">(invoke, "canlog_call", { req: msg })} />
+        </Col>
+      </Row>
+    }
+
     <Row>
       <Col>
         <Bug
