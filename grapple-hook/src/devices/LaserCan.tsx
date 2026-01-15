@@ -1,6 +1,6 @@
 import { faCheck, faInfoCircle, faPencil, faShuffle, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
 import { Button, Col, FormControl, FormSelect, ProgressBar, Row } from "react-bootstrap";
 import SimpleTooltip from "../SimpleTooltip";

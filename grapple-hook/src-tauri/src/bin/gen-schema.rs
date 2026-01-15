@@ -1,39 +1,50 @@
-use std::{path::Path, fs, env};
+use std::{env, fs, path::Path};
 
-use grapple_hook::{devices::{flexican::{FlexiCanRequest, FlexiCanResponse}, lasercan::{LaserCanRequest, LaserCanResponse}, mitocandria::{MitocandriaRequest, MitocandriaResponse}, provider_manager::{ProviderManagerRequest, ProviderManagerResponse}, roborio::daemon::{RoboRioDaemonRequest, RoboRioDaemonResponse}, FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, OldVersionDeviceRequest, OldVersionDeviceResponse}, updates::LightReleaseResponse};
+use grapple_hook::{
+    devices::{
+        flexican::{FlexiCanRequest, FlexiCanResponse},
+        lasercan::{LaserCanRequest, LaserCanResponse},
+        mitocandria::{MitocandriaRequest, MitocandriaResponse},
+        provider_manager::{ProviderManagerRequest, ProviderManagerResponse},
+        roborio::daemon::{RoboRioDaemonRequest, RoboRioDaemonResponse},
+        FirmwareUpgradeDeviceRequest, FirmwareUpgradeDeviceResponse, OldVersionDeviceRequest,
+        OldVersionDeviceResponse,
+    },
+    updates::LightReleaseResponse,
+};
 
 #[derive(schemars::JsonSchema)]
 #[allow(unused)]
 struct MegaSchema {
-  provider_manager_req: ProviderManagerRequest,
-  provider_manager_rsp: ProviderManagerResponse,
-  
-  old_version_req: OldVersionDeviceRequest,
-  old_version_rsp: OldVersionDeviceResponse,
+    provider_manager_req: ProviderManagerRequest,
+    provider_manager_rsp: ProviderManagerResponse,
 
-  firmware_req: FirmwareUpgradeDeviceRequest,
-  firmware_rsp: FirmwareUpgradeDeviceResponse,
+    old_version_req: OldVersionDeviceRequest,
+    old_version_rsp: OldVersionDeviceResponse,
 
-  lasercan_req: LaserCanRequest,
-  lasercan_rsp: LaserCanResponse,
+    firmware_req: FirmwareUpgradeDeviceRequest,
+    firmware_rsp: FirmwareUpgradeDeviceResponse,
 
-  flexican_req: FlexiCanRequest,
-  flexican_rsp: FlexiCanResponse,
+    lasercan_req: LaserCanRequest,
+    lasercan_rsp: LaserCanResponse,
 
-  mitocandria_req: MitocandriaRequest,
-  mitocandria_rsp: MitocandriaResponse,
+    flexican_req: FlexiCanRequest,
+    flexican_rsp: FlexiCanResponse,
 
-  roborio_req: RoboRioDaemonRequest,
-  roborio_rsp: RoboRioDaemonResponse,
+    mitocandria_req: MitocandriaRequest,
+    mitocandria_rsp: MitocandriaResponse,
 
-  light_release_response: LightReleaseResponse,
+    roborio_req: RoboRioDaemonRequest,
+    roborio_rsp: RoboRioDaemonResponse,
+
+    light_release_response: LightReleaseResponse,
 }
 
 fn main() -> anyhow::Result<()> {
-  let args: Vec<String> = env::args().collect();
-  let file = Path::new(args.get(1).expect("No path provided"));
-  let schema = schemars::schema_for!(MegaSchema);
+    let args: Vec<String> = env::args().collect();
+    let file = Path::new(args.get(1).expect("No path provided"));
+    let schema = schemars::schema_for!(MegaSchema);
 
-  fs::write(file, serde_json::to_string_pretty(&schema)?)?;
-  Ok(())
+    fs::write(file, serde_json::to_string_pretty(&schema)?)?;
+    Ok(())
 }

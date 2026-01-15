@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { listen, Event, EventCallback } from "@tauri-apps/api/event";
 import React, { useEffect } from "react";
 import { Alert, Button, Col, Form, InputGroup, Nav, Row, Tab, Toast, ToastContainer } from "react-bootstrap";
