@@ -15,7 +15,7 @@
   },
   "productName": "GrappleHook",
   "mainBinaryName": "GrappleHook",
-  "version": "26.0.1",
+  "version": "26.0.2",
   "identifier": "au.grapplerobotics.hook",
   "plugins": {},
   "app": {

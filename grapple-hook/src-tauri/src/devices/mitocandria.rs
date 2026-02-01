@@ -61,7 +61,7 @@ impl HasFirmwareUpdateURLDevice for Mitocandria {
 #[async_trait::async_trait]
 impl VersionGatedDevice for Mitocandria {
     fn validate_version(version: Option<String>) -> anyhow::Result<()> {
-        Self::require_version(version, ">= 2025.0.1, < 2025.1.0")
+        Self::require_version(version, ">= 2025.0.1, < 2026.1.0")
     }
 
     async fn check_for_new_firmware_release(current_version: &str) -> Option<LightReleaseResponse> {
